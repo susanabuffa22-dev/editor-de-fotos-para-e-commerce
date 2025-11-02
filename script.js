@@ -7,7 +7,7 @@
 const CONFIG = {
     // ⚠️ IMPORTANTE: Reemplaza con tu API Key de Google AI
     API_KEY: "AIzaSyBAuTlMG2kQWBIpaylzCUhGJopB2JcNh6I", // 👈 CAMBIAR AQUÍ
-    API_ENDPOINT: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+        API_ENDPOINT: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent",
     
     // System prompts para diferentes tipos de edición
     SYSTEM_PROMPTS: {
