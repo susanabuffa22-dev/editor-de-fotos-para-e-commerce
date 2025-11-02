@@ -1,25 +1,25 @@
- // Editor de Fotos para E-commerce
-// Versión compatible con CSP (sin eval, new Function, setTimeout con string)
+// Editor de Fotos para E-commerce
+// Versión con IDs correctos del HTML + CSP compatible
 
 const API_KEY = "AIzaSyBAuTlMG2kQWBIpaylzCUhGJopB2JcNh6I";
 
-// Elementos DOM
+// Elementos DOM (usando los IDs reales del HTML)
 const elements = {
     // Person Image
     personImage: document.getElementById('personImage'),
-    personInput: document.getElementById('personInput'),
+    personInput: document.getElementById('imageUpload'), // ID correcto
     personPreview: document.getElementById('personPreview'),
     
     // Garment Image
     garmentImage: document.getElementById('garmentImage'),
-    garmentInput: document.getElementById('garmentInput'),
+    garmentInput: document.getElementById('garmentUpload'), // ID correcto
     garmentPreview: document.getElementById('garmentPreview'),
     
-    // Tools
-    btnBackground: document.getElementById('btnBackground'),
-    btnColor: document.getElementById('btnColor'),
-    btnEnhance: document.getElementById('btnEnhance'),
-    btnMakeup: document.getElementById('btnMakeup'),
+    // Tools (IDs correctos del HTML)
+    btnBackground: document.getElementById('btn-white-bg'), // ID correcto
+    btnColor: document.getElementById('btn-square-format'), // ID correcto
+    btnEnhance: document.getElementById('btn-smile'), // ID correcto
+    btnMakeup: document.getElementById('btn-virtual-try-on'), // ID correcto
     
     // Display areas
     originalImage: document.getElementById('originalImage'),
@@ -27,11 +27,11 @@ const elements = {
     
     // Loader and buttons
     loader: document.getElementById('loader'),
-    btnDownload: document.getElementById('btnDownload'),
-    btnRetry: document.getElementById('btnRetry'),
+    btnDownload: document.getElementById('btn-download'), // ID correcto
+    btnRetry: document.getElementById('btn-retry'), // ID correcto
     
     // Error message
-    errorMessage: document.getElementById('errorMessage')
+    errorMessage: document.getElementById('apiNotice') // ID correcto del notice
 };
 
 // Initialize app
@@ -43,19 +43,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Setup event listeners
 function setupEventListeners() {
-    // Image uploads
+    // Image uploads (usando IDs correctos)
     elements.personInput.addEventListener('change', handlePersonImageUpload);
     elements.garmentInput.addEventListener('change', handleGarmentImageUpload);
     
-    // Tool buttons
+    // Tool buttons (usando IDs correctos)
     elements.btnBackground.addEventListener('click', function() { callApi('white'); });
     elements.btnColor.addEventListener('click', function() { callApi('color'); });
     elements.btnEnhance.addEventListener('click', function() { callApi('enhance'); });
     elements.btnMakeup.addEventListener('click', function() { callApi('makeup'); });
     
-    // Action buttons
+    // Action buttons (usando IDs correctos)
     elements.btnDownload.addEventListener('click', downloadImage);
     elements.btnRetry.addEventListener('click', retry);
+    
+    console.log('✅ Event listeners configurados correctamente');
 }
 
 // Handle person image upload
@@ -82,6 +84,12 @@ function handlePersonImageUpload(event) {
         elements.personImage.src = dataUrl;
         elements.personPreview.style.display = 'block';
         elements.originalImage.innerHTML = '<img src="' + dataUrl + '" alt="Imagen original">';
+        
+        // Show garment upload section
+        const garmentSection = document.getElementById('garmentSection');
+        if (garmentSection) {
+            garmentSection.style.display = 'block';
+        }
         
         showLoader(false);
         showError('Imagen de persona cargada exitosamente', 'success');
@@ -123,9 +131,6 @@ function handleGarmentImageUpload(event) {
         showLoader(false);
         showError('Imagen de prenda cargada exitosamente', 'success');
         console.log('✅ Prenda cargada correctamente');
-        
-        // Enable tool buttons
-        enableTools(true);
     }).catch(function(error) {
         showLoader(false);
         showError('Error al cargar la imagen de prenda', 'error');
@@ -168,18 +173,23 @@ async function callApi(toolType) {
     showError('', '');
     
     let prompt = '';
+    let selectedTool = '';
     switch(toolType) {
         case 'white':
             prompt = 'Cambia el fondo a blanco puro, manteniendo la persona intacta';
+            selectedTool = 'btn-white-bg';
             break;
         case 'color':
             prompt = 'Convierte la imagen a color manteniendo todos los detalles';
+            selectedTool = 'btn-square-format';
             break;
         case 'enhance':
             prompt = 'Mejora la calidad y nitidez de la imagen, realza los detalles';
+            selectedTool = 'btn-smile';
             break;
         case 'makeup':
             prompt = 'Aplica maquillaje natural y realza la belleza de la persona';
+            selectedTool = 'btn-virtual-try-on';
             break;
         default:
             showError('Tipo de herramienta no válida', 'error');
@@ -274,10 +284,10 @@ async function callApi(toolType) {
 
 // Enable/disable tool buttons
 function enableTools(enabled) {
-    elements.btnBackground.disabled = !enabled;
-    elements.btnColor.disabled = !enabled;
-    elements.btnEnhance.disabled = !enabled;
-    elements.btnMakeup.disabled = !enabled;
+    const controls = document.getElementById('controls');
+    if (controls) {
+        controls.disabled = !enabled;
+    }
 }
 
 // Download edited image
@@ -319,11 +329,17 @@ function showLoader(show) {
 function showError(message, type) {
     if (!elements.errorMessage) return;
     
-    elements.errorMessage.textContent = message;
-    elements.errorMessage.className = 'message ' + type;
+    // Hide all message types first
+    const notices = document.querySelectorAll('.api-notice');
+    notices.forEach(function(notice) {
+        notice.style.display = 'none';
+    });
     
     if (message) {
         elements.errorMessage.style.display = 'block';
+        elements.errorMessage.innerHTML = '<div class="notice-content">' +
+            '<span>' + message + '</span>' +
+        '</div>';
         
         // Auto-hide success messages after 3 seconds (CSP-safe)
         if (type === 'success') {
