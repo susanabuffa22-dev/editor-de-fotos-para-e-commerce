@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canva Pro - Autorización</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E8E);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .callback-container {
+            text-align: center;
+            max-width: 500px;
+            padding: 2rem;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 2rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .callback-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .callback-message {
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+        
+        .error-message {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body>
+    <div class="callback-container">
+        <div class="loading-spinner"></div>
+        <h1 class="callback-title">Conectando con Canva Pro</h1>
+        <p class="callback-message">Autorizando la conexión, por favor espera...</p>
+        <div id="error-container" style="display: none;">
+            <div class="error-message">
+                <p id="error-text"></p>
+                <p style="margin-top: 0.5rem; opacity: 0.8;">Cerrando ventana automáticamente...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Función para mostrar mensaje de error
+        function showError(message) {
+            document.querySelector('.loading-spinner').style.display = 'none';
+            document.querySelector('.callback-title').textContent = 'Error de Conexión';
+            document.querySelector('.callback-message').style.display = 'none';
+            
+            const errorContainer = document.getElementById('error-container');
+            const errorText = document.getElementById('error-text');
+            
+            errorText.textContent = message;
+            errorContainer.style.display = 'block';
+            
+            // Cerrar ventana después de 3 segundos
+            setTimeout(() => {
+                if (window.opener) {
+                    window.close();
+                } else {
+                    window.history.back();
+                }
+            }, 3000);
+        }
+
+        // Función para extraer parámetros de la URL
+        function getUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return {
+                code: urlParams.get('code'),
+                state: urlParams.get('state'),
+                error: urlParams.get('error')
+            };
+        }
+
+        // Función para enviar mensaje a la ventana padre
+        function sendMessageToParent(data) {
+            if (window.opener) {
+                try {
+                    window.opener.postMessage(data, '*');
+                } catch (error) {
+                    console.error('Error enviando mensaje:', error);
+                    showError('Error de comunicación con la aplicación principal');
+                    return false;
+                }
+            } else {
+                // Si no hay ventana padre, usar postMessage al documento padre
+                try {
+                    parent.postMessage(data, '*');
+                } catch (error) {
+                    console.error('Error enviando mensaje a padre:', error);
+                    showError('Error de comunicación');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Función para manejar el código de autorización
+        function handleAuthCode(code, state) {
+            const authData = {
+                type: 'canva-auth',
+                code: code,
+                state: state,
+                timestamp: Date.now()
+            };
+
+            // Enviar datos a la aplicación principal
+            if (sendMessageToParent(authData)) {
+                // Cerrar ventana después de un breve delay para que se procese
+                setTimeout(() => {
+                    if (window.opener) {
+                        window.close();
+                    } else {
+                        // Fallback: redirigir a la página principal
+                        window.location.href = '/index.html';
+                    }
+                }, 1000);
+            }
+        }
+
+        // Función principal de inicialización
+        function initializeCallback() {
+            try {
+                const params = getUrlParams();
+                
+                // Verificar si hay un error
+                if (params.error) {
+                    const errorMessage = {
+                        type: 'canva-error',
+                        error: params.error,
+                        description: 'Error en la autorización de Canva',
+                        timestamp: Date.now()
+                    };
+                    
+                    sendMessageToParent(errorMessage);
+                    showError(`Error de autorización: ${params.error}`);
+                    return;
+                }
+
+                // Verificar si hay código de autorización
+                if (params.code) {
+                    console.log('Código de autorización recibido:', params.code.substring(0, 20) + '...');
+                    handleAuthCode(params.code, params.state);
+                } else {
+                    showError('No se recibió código de autorización');
+                }
+                
+            } catch (error) {
+                console.error('Error procesando callback:', error);
+                showError('Error interno procesando la autorización');
+            }
+        }
+
+        // Inicializar cuando la página esté lista
+        document.addEventListener('DOMContentLoaded', initializeCallback);
+
+        // Manejar errores de JavaScript
+        window.addEventListener('error', function(e) {
+            console.error('Error de JavaScript:', e.error);
+            showError('Error interno de la aplicación');
+        });
+
+        // Manejar errores de promesas no capturadas
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Promesa rechazada:', e.reason);
+            showError('Error interno procesando autorización');
+        });
+
+        // Timeout de seguridad - cerrar si no se procesa en 30 segundos
+        setTimeout(() => {
+            if (document.querySelector('.loading-spinner').style.display !== 'none') {
+                showError('Timeout en la autorización');
+            }
+        }, 30000);
+    </script>
+</body>
+</html>
