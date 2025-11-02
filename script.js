@@ -1,5 +1,3 @@
-$cat /workspace/script_csp_compatible.js
-The command's output is:
  // Editor de Fotos para E-commerce
 // Versión compatible con CSP (sin eval, new Function, setTimeout con string)
 
