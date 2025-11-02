@@ -1,7 +1,7 @@
-$cat script_final.js
+$cat /workspace/script_csp_compatible.js
 The command's output is:
  // Editor de Fotos para E-commerce
-// Versión con correcciones de carga de imágenes y API Google AI activo
+// Versión compatible con CSP (sin eval, new Function, setTimeout con string)
 
 const API_KEY = "AIzaSyBAuTlMG2kQWBIpaylzCUhGJopB2JcNh6I";
 
@@ -50,10 +50,10 @@ function setupEventListeners() {
     elements.garmentInput.addEventListener('change', handleGarmentImageUpload);
     
     // Tool buttons
-    elements.btnBackground.addEventListener('click', () => callApi('white'));
-    elements.btnColor.addEventListener('click', () => callApi('color'));
-    elements.btnEnhance.addEventListener('click', () => callApi('enhance'));
-    elements.btnMakeup.addEventListener('click', () => callApi('makeup'));
+    elements.btnBackground.addEventListener('click', function() { callApi('white'); });
+    elements.btnColor.addEventListener('click', function() { callApi('color'); });
+    elements.btnEnhance.addEventListener('click', function() { callApi('enhance'); });
+    elements.btnMakeup.addEventListener('click', function() { callApi('makeup'); });
     
     // Action buttons
     elements.btnDownload.addEventListener('click', downloadImage);
@@ -79,11 +79,11 @@ function handlePersonImageUpload(event) {
     
     showLoader(true);
     
-    fileToBase64(file).then(base64 => {
-        const dataUrl = `data:${file.type};base64,${base64}`;
+    fileToBase64(file).then(function(base64) {
+        const dataUrl = "data:" + file.type + ";base64," + base64;
         elements.personImage.src = dataUrl;
         elements.personPreview.style.display = 'block';
-        elements.originalImage.innerHTML = `<img src="${dataUrl}" alt="Imagen original">`;
+        elements.originalImage.innerHTML = '<img src="' + dataUrl + '" alt="Imagen original">';
         
         showLoader(false);
         showError('Imagen de persona cargada exitosamente', 'success');
@@ -91,7 +91,7 @@ function handlePersonImageUpload(event) {
         
         // Enable tool buttons
         enableTools(true);
-    }).catch(error => {
+    }).catch(function(error) {
         showLoader(false);
         showError('Error al cargar la imagen de persona', 'error');
         console.error('❌ Error al cargar persona:', error);
@@ -117,8 +117,8 @@ function handleGarmentImageUpload(event) {
     
     showLoader(true);
     
-    fileToBase64(file).then(base64 => {
-        const dataUrl = `data:${file.type};base64,${base64}`;
+    fileToBase64(file).then(function(base64) {
+        const dataUrl = "data:" + file.type + ";base64," + base64;
         elements.garmentImage.src = dataUrl;
         elements.garmentPreview.style.display = 'block';
         
@@ -128,7 +128,7 @@ function handleGarmentImageUpload(event) {
         
         // Enable tool buttons
         enableTools(true);
-    }).catch(error => {
+    }).catch(function(error) {
         showLoader(false);
         showError('Error al cargar la imagen de prenda', 'error');
         console.error('❌ Error al cargar prenda:', error);
@@ -137,7 +137,7 @@ function handleGarmentImageUpload(event) {
 
 // Convert file to base64
 function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
+    return new Promise(function(resolve, reject) {
         const reader = new FileReader();
         reader.onload = function() {
             // Remove data URL prefix if present
@@ -215,7 +215,7 @@ async function callApi(toolType) {
     try {
         console.log('🔄 Enviando solicitud a Google AI...');
         
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+        const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + API_KEY, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -228,21 +228,21 @@ async function callApi(toolType) {
         if (!response.ok) {
             const errorData = await response.json();
             console.error('❌ Error de API:', errorData);
-            throw new Error(`Error de API: ${response.status} - ${errorData.error?.message || 'Error desconocido'}`);
+            throw new Error('Error de API: ' + response.status + ' - ' + (errorData.error?.message || 'Error desconocido'));
         }
         
         const data = await response.json();
         console.log('📦 Datos de respuesta recibidos:', data);
         
         if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
-            const textResponse = data.candidates[0].content.parts.find(part => part.text);
-            const imageResponse = data.candidates[0].content.parts.find(part => part.inline_data);
+            const textResponse = data.candidates[0].content.parts.find(function(part) { return part.text; });
+            const imageResponse = data.candidates[0].content.parts.find(function(part) { return part.inline_data; });
             
             if (imageResponse && imageResponse.inline_data) {
                 const imageBase64 = imageResponse.inline_data.data;
-                const editedDataUrl = `data:image/jpeg;base64,${imageBase64}`;
+                const editedDataUrl = "data:image/jpeg;base64," + imageBase64;
                 
-                elements.editedImage.innerHTML = `<img src="${editedDataUrl}" alt="Imagen editada">`;
+                elements.editedImage.innerHTML = '<img src="' + editedDataUrl + '" alt="Imagen editada">';
                 elements.btnDownload.disabled = false;
                 elements.btnRetry.disabled = false;
                 
@@ -250,7 +250,7 @@ async function callApi(toolType) {
                 console.log('✅ Imagen procesada correctamente');
             } else if (textResponse) {
                 console.log('📝 Respuesta de texto:', textResponse.text);
-                showError(`Respuesta: ${textResponse.text}`, 'info');
+                showError('Respuesta: ' + textResponse.text, 'info');
             } else {
                 throw new Error('No se recibió imagen en la respuesta');
             }
@@ -260,11 +260,11 @@ async function callApi(toolType) {
         
     } catch (error) {
         console.error('❌ Error en callApi:', error);
-        showError(`Error al procesar la imagen: ${error.message}`, 'error');
+        showError('Error al procesar la imagen: ' + error.message, 'error');
         
         // Fallback: show original image
         if (elements.personImage.src) {
-            elements.editedImage.innerHTML = `<img src="${elements.personImage.src}" alt="Imagen original (sin procesar)">`;
+            elements.editedImage.innerHTML = '<img src="' + elements.personImage.src + '" alt="Imagen original (sin procesar)">';
             elements.btnDownload.disabled = false;
             elements.btnRetry.disabled = false;
             showError('Mostrando imagen original debido al error de API', 'warning');
@@ -291,7 +291,7 @@ function downloadImage() {
     }
     
     const link = document.createElement('a');
-    link.download = `foto_editada_${Date.now()}.jpg`;
+    link.download = 'foto_editada_' + Date.now() + '.jpg';
     link.href = editedImg.src;
     link.click();
     
@@ -322,14 +322,14 @@ function showError(message, type) {
     if (!elements.errorMessage) return;
     
     elements.errorMessage.textContent = message;
-    elements.errorMessage.className = `message ${type}`;
+    elements.errorMessage.className = 'message ' + type;
     
     if (message) {
         elements.errorMessage.style.display = 'block';
         
-        // Auto-hide success messages after 3 seconds
+        // Auto-hide success messages after 3 seconds (CSP-safe)
         if (type === 'success') {
-            setTimeout(() => {
+            setTimeout(function() {
                 elements.errorMessage.style.display = 'none';
             }, 3000);
         }
