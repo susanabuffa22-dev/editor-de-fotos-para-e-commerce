@@ -379,6 +379,62 @@ async function fetchWithBackoff(url, options, maxRetries) {
 
 function extractImageFromResponse(data) {
     try {
+        console.log('🔍 Analizando estructura de respuesta:', data);
+        
+        // Buscar imagen en diferentes formatos de respuesta
+        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+            const parts = data.candidates[0].content.parts;
+            
+            // Verificar que parts existe y es un array
+            if (!parts || !Array.isArray(parts) || parts.length === 0) {
+                console.log('⚠️ No hay parts en la respuesta o está vacío');
+                return null;
+            }
+            
+            for (let i = 0; i < parts.length; i++) {
+                const part = parts[i];
+                if (part.inline_data && part.inline_data.data) {
+                    console.log('✅ Imagen encontrada en inline_data');
+                    return part.inline_data.data;
+                }
+                if (part.text && part.text.indexOf('data:image') !== -1) {
+                    // Extraer base64 del texto
+                    const match = part.text.match(/data:image\/[a-z]+;base64,([a-zA-Z0-9+\/=]+)/);
+                    if (match) {
+                        console.log('✅ Imagen encontrada en texto');
+                        return match[1];
+                    }
+                }
+            }
+        }
+        
+        // Buscar en otros posibles formatos
+        if (data.content && data.content.parts) {
+            const parts = data.content.parts;
+            if (parts && Array.isArray(parts)) {
+                for (let i = 0; i < parts.length; i++) {
+                    const part = parts[i];
+                    if (part.inline_data && part.inline_data.data) {
+                        console.log('✅ Imagen encontrada en content.parts');
+                        return part.inline_data.data;
+                    }
+                }
+            }
+        }
+        
+        // Verificar si la respuesta indica un problema
+        if (data.candidates && data.candidates[0] && data.candidates[0].finishReason) {
+            console.log('❌ Razón de finalización:', data.candidates[0].finishReason);
+        }
+        
+        console.log('❌ No se encontró imagen en la respuesta');
+        return null;
+    } catch (error) {
+        console.error('❌ Error extrayendo imagen:', error);
+        return null;
+    }
+}
+    try {
         // Buscar imagen en diferentes formatos de respuesta
         if (data.candidates && data.candidates[0] && data.candidates[0].content) {
             const parts = data.candidates[0].content.parts;
