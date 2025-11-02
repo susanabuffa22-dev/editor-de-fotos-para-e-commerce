@@ -142,10 +142,11 @@ async function handlePersonImageUpload(event) {
         const base64 = await fileToBase64(file);
         base64ImageData = base64;
         
-        // Show preview
-        elements.personImage.src = base64;
+        // Show preview with proper data URL
+        const dataUrl = `data:${file.type};base64,${base64}`;
+        elements.personImage.src = dataUrl;
         elements.personPreview.style.display = 'block';
-        elements.originalImage.innerHTML = `<img src="${base64}" alt="Imagen original">`;
+        elements.originalImage.innerHTML = `<img src="${dataUrl}" alt="Imagen original">`;
         
         // Enable controls
         enableControls();
@@ -169,8 +170,9 @@ async function handleGarmentImageUpload(event) {
         const base64 = await fileToBase64(file);
         base64GarmentData = base64;
         
-        // Show preview
-        elements.garmentImage.src = base64;
+        // Show preview with proper data URL
+        const dataUrl = `data:${file.type};base64,${base64}`;
+        elements.garmentImage.src = dataUrl;
         elements.garmentPreview.style.display = 'block';
         
         console.log('✅ Imagen de prenda cargada exitosamente');
@@ -298,8 +300,9 @@ async function callApi(payload) {
         const imageBase64 = extractImageFromResponse(data);
         
         if (imageBase64) {
-            // Show result
-            elements.editedImage.innerHTML = `<img src="data:image/jpeg;base64,${imageBase64}" alt="Imagen editada">`;
+            // Show result with proper data URL
+            const editedDataUrl = `data:image/jpeg;base64,${imageBase64}`;
+            elements.editedImage.innerHTML = `<img src="${editedDataUrl}" alt="Imagen editada">`;
             
             // Enable action buttons
             elements.btnDownload.disabled = false;
