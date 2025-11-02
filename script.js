@@ -1,6 +1,6 @@
 // ===========================
 // E-COMMERCE PHOTO EDITOR
-// JavaScript Application Logic - API REAL ACTIVADA
+// JavaScript Application Logic - LIMPIO SIN FIREBASE
 // ===========================
 
 // Configuration
@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupEventListeners();
     showApiNotice();
+    console.log('🚀 Editor inicializado - Versión SIN Firebase Storage');
 });
 
 function initializeApp() {
@@ -88,6 +89,7 @@ function initializeApp() {
         console.warn('⚠️ API Key no configurada');
     } else {
         console.log('✅ API Key configurada correctamente');
+        console.log('✅ Google AI API: Habilitada');
     }
 }
 
@@ -120,6 +122,7 @@ function setupEventListeners() {
     checkCanvaConnection();
     
     console.log('✅ Event listeners configurados correctamente');
+    console.log('✅ Modo: Upload local de imágenes - SIN Firebase Storage');
 }
 
 // ===========================
@@ -131,6 +134,18 @@ async function handlePersonImageUpload(event) {
     if (!file) return;
     
     try {
+        // Validar tipo de archivo
+        if (!file.type.startsWith('image/')) {
+            showError('Por favor, selecciona una imagen válida (JPG, PNG, etc.)');
+            return;
+        }
+        
+        // Validar tamaño (máximo 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            showError('La imagen es demasiado grande. Máximo 10MB.');
+            return;
+        }
+        
         const base64 = await fileToBase64(file);
         base64ImageData = base64;
         
@@ -147,6 +162,7 @@ async function handlePersonImageUpload(event) {
         elements.garmentSection.style.display = 'flex';
         
         console.log('✅ Imagen de persona cargada exitosamente');
+        console.log('📁 Archivo: ' + file.name + ' (' + (file.size / 1024 / 1024).toFixed(2) + 'MB)');
         
     } catch (error) {
         console.error('❌ Error al cargar imagen:', error);
@@ -159,6 +175,18 @@ async function handleGarmentImageUpload(event) {
     if (!file) return;
     
     try {
+        // Validar tipo de archivo
+        if (!file.type.startsWith('image/')) {
+            showError('Por favor, selecciona una imagen válida (JPG, PNG, etc.)');
+            return;
+        }
+        
+        // Validar tamaño (máximo 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            showError('La imagen es demasiado grande. Máximo 10MB.');
+            return;
+        }
+        
         const base64 = await fileToBase64(file);
         base64GarmentData = base64;
         
@@ -168,6 +196,7 @@ async function handleGarmentImageUpload(event) {
         elements.garmentPreview.style.display = 'block';
         
         console.log('✅ Imagen de prenda cargada exitosamente');
+        console.log('📁 Archivo: ' + file.name + ' (' + (file.size / 1024 / 1024).toFixed(2) + 'MB)');
         
     } catch (error) {
         console.error('❌ Error al cargar prenda:', error);
@@ -208,6 +237,7 @@ function standardTask(promptText) {
         }
     };
     
+    console.log('🎯 Iniciando tarea: ' + promptText);
     callApi(payload);
 }
 
@@ -252,11 +282,12 @@ function virtualTryOnTask() {
         }
     };
     
+    console.log('🎯 Iniciando tarea: virtual try-on');
     callApi(payload);
 }
 
 // ===========================
-// API COMMUNICATION - REAL API ACTIVATED
+// API COMMUNICATION - GOOGLE AI
 // ===========================
 
 async function callApi(payload) {
@@ -274,6 +305,8 @@ async function callApi(payload) {
             return;
         }
         
+        console.log('📡 Enviando solicitud a Google AI...');
+        
         const response = await fetchWithBackoff(CONFIG.API_ENDPOINT + '?key=' + CONFIG.API_KEY, {
             method: 'POST',
             headers: {
@@ -290,7 +323,7 @@ async function callApi(payload) {
         }
         
         const data = await response.json();
-        console.log('📨 Respuesta recibida:', data);
+        console.log('📨 Respuesta recibida de Google AI:', data);
         
         // Extract image from response
         const imageBase64 = extractImageFromResponse(data);
@@ -305,7 +338,7 @@ async function callApi(payload) {
             elements.btnRetry.disabled = false;
             
             console.log('✅ Imagen procesada exitosamente');
-            showError('✅ Imagen editada exitosamente', 'success');
+            showError('✅ Imagen editada exitosamente con IA', 'success');
         } else {
             const reason = analyzeApiResponse(data);
             showError('No se pudo generar la imagen. Razón: ' + reason);
@@ -313,7 +346,7 @@ async function callApi(payload) {
         
     } catch (error) {
         console.error('❌ Error en API:', error);
-        showError(error.message);
+        showError('Error de conexión: ' + error.message);
     } finally {
         showLoader(false);
     }
@@ -429,6 +462,7 @@ function downloadImage() {
                     URL.revokeObjectURL(url);
                     
                     console.log('✅ Imagen descargada');
+                    showError('Imagen descargada exitosamente', 'success');
                 }
             }, 'image/jpeg', 0.9);
         };
@@ -630,7 +664,7 @@ function fileToBase64(file) {
 }
 
 // ===========================
-// CANVA PRO INTEGRATION
+// CANVA PRO INTEGRATION (SIMULATED)
 // ===========================
 
 // Check Canva connection status
@@ -670,7 +704,7 @@ function disconnectCanva() {
 // Make function global for onclick handler
 window.disconnectCanva = disconnectCanva;
 
-// Export to Canva Pro function
+// Export to Canva Pro function (SIMULATED)
 function exportToCanvaPro() {
     const accessToken = localStorage.getItem('canva_access_token');
     
@@ -688,95 +722,16 @@ function exportToCanvaPro() {
     
     showError('Exportando imagen a Canva Pro...', 'info');
     
-    // Convert image to blob and upload to Canva
-    fetch(img.src)
-        .then(function(res) {
-            return res.blob();
-        })
-        .then(function(blob) {
-            // In a real implementation, you would upload to Canva Pro API
-            // For demo purposes, we'll simulate the process
-            console.log('📤 Subiendo imagen a Canva Pro...');
-            
-            // Simulate API call delay
-            return new Promise(function(resolve) {
-                setTimeout(function() {
-                    resolve({ success: true, designId: 'demo-' + Date.now() });
-                }, 2000);
-            });
-        })
-        .then(function(data) {
-            console.log('✅ Imagen exportada a Canva Pro:', data);
-            showError('Imagen exportada exitosamente a Canva Pro', 'success');
-            
-            // In a real app, you would show a link to the Canva design
-            console.log('🔗 Enlace al diseño en Canva:', 'https://www.canva.com/design/' + data.designId);
-        })
-        .catch(function(error) {
-            console.error('❌ Error exportando a Canva:', error);
-            showError('Error al exportar a Canva Pro');
-        });
+    // Simular exportación a Canva
+    setTimeout(function() {
+        console.log('📤 Simulación: Imagen exportada a Canva Pro');
+        showError('Imagen exportada exitosamente a Canva Pro (simulación)', 'success');
+    }, 2000);
 }
 
-// Nota: Para integrar con Canva Pro, necesitarás configurar OAuth
-// Aquí tienes una estructura base para la integración
-
+// Función para inicializar integración con Canva (SIMULADA)
 function initializeCanvaIntegration() {
-    // Configuración para Canva Pro OAuth
-    const CANVA_CONFIG = {
-        clientId: "TU_CANVA_CLIENT_ID", // 👈 CAMBIAR AQUÍ
-        clientSecret: "TU_CANVA_CLIENT_SECRET", // 👈 CAMBIAR AQUÍ
-        redirectUri: window.location.origin + "/canva-callback",
-        scope: "design:read design:write"
-    };
-    
-    // Función para iniciar OAuth con Canva
-    function startCanvaOAuth() {
-        const authUrl = 'https://www.canva.com/oauth/authorize?' +
-            'client_id=' + CANVA_CONFIG.clientId + '&' +
-            'redirect_uri=' + encodeURIComponent(CANVA_CONFIG.redirectUri) + '&' +
-            'scope=' + encodeURIComponent(CANVA_CONFIG.scope) + '&' +
-            'response_type=code';
-        
-        window.location.href = authUrl;
-    }
-    
-    // Función para manejar el callback de OAuth
-    function handleCanvaCallback(code) {
-        // Intercambiar código por token de acceso
-        fetch('/api/canva/token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: code, redirectUri: CANVA_CONFIG.redirectUri })
-        })
-        .then(function(response) {
-            return response.json();
-        })
-        .then(function(data) {
-            if (data.access_token) {
-                localStorage.setItem('canva_access_token', data.access_token);
-                console.log('✅ Canva Pro conectado exitosamente');
-                updateCanvaStatus('connected');
-            }
-        })
-        .catch(function(error) {
-            console.error('❌ Error conectando con Canva:', error);
-            showError('Error al conectar con Canva Pro');
-        });
-    }
-    
-    // Exportar funciones para uso global
-    window.CanvaIntegration = {
-        startOAuth: startCanvaOAuth,
-        handleCallback: handleCanvaCallback,
-        exportToCanva: exportToCanvaPro,
-        config: CANVA_CONFIG
-    };
+    console.log('ℹ️ Canva Pro: Modo simulado (requiere credenciales reales)');
 }
 
-// Inicializar integración con Canva al cargar la página
-document.addEventListener('DOMContentLoaded', function() {
-    initializeCanvaIntegration();
-});
-
-console.log('🎨 Editor de Fotos E-commerce - API REAL activada');
+console.log('🎨 Editor de Fotos E-commerce - LIMPIO SIN Firebase Storage');
