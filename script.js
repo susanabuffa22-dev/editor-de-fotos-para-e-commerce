@@ -1,6 +1,6 @@
 // ===========================
 // E-COMMERCE PHOTO EDITOR
-// JavaScript Application Logic - CSP COMPATIBLE
+// JavaScript Application Logic - API REAL ACTIVADA
 // ===========================
 
 // Configuration
@@ -86,6 +86,8 @@ function initializeApp() {
     // Verificar si hay API key configurada
     if (CONFIG.API_KEY === "TU_API_KEY_AQUI") {
         console.warn('⚠️ API Key no configurada');
+    } else {
+        console.log('✅ API Key configurada correctamente');
     }
 }
 
@@ -254,39 +256,24 @@ function virtualTryOnTask() {
 }
 
 // ===========================
-// API COMMUNICATION
+// API COMMUNICATION - REAL API ACTIVATED
 // ===========================
 
 async function callApi(payload) {
-    // 🧪 TEMPORARY TEST MODE - Skip API to test image loading
-    console.log('🧪 Modo de prueba - saltando llamada a API');
-    showError('✅ ÉXITO: Las imágenes se cargan correctamente', 'success');
-    
-    // Show test result after a short delay
-    setTimeout(function() {
-        // Use the original loaded image as test result
-        if (elements.personImage && elements.personImage.src) {
-            elements.editedImage.innerHTML = '<img src="' + elements.personImage.src + '" alt="Imagen de prueba">';
-            elements.btnDownload.disabled = false;
-            elements.btnRetry.disabled = false;
-            console.log('✅ Imagen de prueba mostrada (carga OK)');
-        }
-        showLoader(false);
-    }, 1500);
-    
-    return;
-    
-    /* ===== ORIGINAL API CODE (COMMENTED OUT FOR TESTING) =====
-    // Check API key
-    if (CONFIG.API_KEY === "TU_API_KEY_AQUI") {
-        showError('Error 403 (Forbidden): API Key no configurada. Por favor, configura tu API Key en el código JavaScript.');
-        return;
-    }
+    console.log('🚀 Iniciando edición con Google AI...');
+    showError('Procesando imagen con IA...', 'info');
     
     // Show loader
     showLoader(true);
     
     try {
+        // Check API key
+        if (CONFIG.API_KEY === "TU_API_KEY_AQUI") {
+            showError('Error 403 (Forbidden): API Key no configurada. Por favor, configura tu API Key en el código JavaScript.');
+            showLoader(false);
+            return;
+        }
+        
         const response = await fetchWithBackoff(CONFIG.API_ENDPOINT + '?key=' + CONFIG.API_KEY, {
             method: 'POST',
             headers: {
@@ -318,6 +305,7 @@ async function callApi(payload) {
             elements.btnRetry.disabled = false;
             
             console.log('✅ Imagen procesada exitosamente');
+            showError('✅ Imagen editada exitosamente', 'success');
         } else {
             const reason = analyzeApiResponse(data);
             showError('No se pudo generar la imagen. Razón: ' + reason);
@@ -329,7 +317,6 @@ async function callApi(payload) {
     } finally {
         showLoader(false);
     }
-    */
 }
 
 async function fetchWithBackoff(url, options, maxRetries) {
@@ -792,4 +779,4 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeCanvaIntegration();
 });
 
-console.log('🎨 Editor de Fotos E-commerce CSP Compatible cargado correctamente');
+console.log('🎨 Editor de Fotos E-commerce - API REAL activada');
