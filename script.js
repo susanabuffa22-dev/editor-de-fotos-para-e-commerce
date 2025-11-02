@@ -1,71 +1,49 @@
 // ===========================
 // E-COMMERCE PHOTO EDITOR
-// JavaScript Application Logic - LIMPIO SIN FIREBASE
+// JavaScript Application Logic - VERSIÓN ESTABLE
 // ===========================
 
 // Configuration
 const CONFIG = {
-    // ⚠️ IMPORTANTE: Reemplaza con tu API Key de Google AI
-    API_KEY: "AIzaSyBAuTlMG2kQWBIpaylzCUhGJopB2JcNh6I", // 👈 CAMBIAR AQUÍ
-       API_ENDPOINT: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+    API_KEY: "AIzaSyBAuTlMG2kQWBIpaylzCUhGJopB2JcNh6I",
+    API_ENDPOINT: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
     
-    // System prompts para diferentes tipos de edición
     SYSTEM_PROMPTS: {
-        standard: "Eres un editor de fotos profesional para e-commerce. Tu tarea es editar la imagen proporcionada según el prompt del usuario. \n\nINSTRUCCIONES ESPECÍFICAS:\n- Mantén a la persona intacta, solo modifica el fondo, formato o expresión\n- Asegúrate de que la imagen final tenga calidad profesional para e-commerce\n- No cambies las proporciones de la persona\n- Usa técnicas de edición realista\n\nDevuelve SOLO la imagen editada en formato base64 sin texto adicional.",
+        standard: "Eres un editor de fotos profesional para e-commerce. Edita la imagen manteniendo a la persona intacta, solo modifica el fondo, formato o expresión. Asegúrate de que la imagen final tenga calidad profesional. Devuelve SOLO la imagen editada en formato base64 sin texto adicional.",
         
-        virtualTryOn: "Eres un editor de fotos profesional especializado en virtual try-on para e-commerce. Tu tarea es combinar la imagen de la persona con la prenda de ropa proporcionada de manera realista.\n\nINSTRUCCIONES ESPECÍFICAS:\n- Coloca la prenda sobre la persona de manera natural y realista\n- Asegúrate de que la prenda se ajuste correctamente a la forma del cuerpo\n- Mantén la iluminación y sombras consistentes\n- La prenda debe verse natural, como si la persona realmente la estuviera usando\n- Calidad profesional para e-commerce\n\nDevuelve SOLO la imagen combinada en formato base64 sin texto adicional."
+        virtualTryOn: "Eres un editor de fotos profesional especializado en virtual try-on. Combina la imagen de la persona con la prenda de manera realista. La prenda debe verse natural como si la persona realmente la estuviera usando. Devuelve SOLO la imagen combinada en formato base64 sin texto adicional."
     }
 };
 
-// Global state variables
+// Global state
 let base64ImageData = null;
 let base64GarmentData = null;
 let lastApiCall = null;
-let editedImageBlob = null;
 
-// ===========================
-// DOM ELEMENTS
-// ===========================
-
+// DOM Elements
 const elements = {
-    // Upload elements
     imageUpload: document.getElementById('imageUpload'),
     garmentUpload: document.getElementById('garmentUpload'),
-    personUploadArea: document.getElementById('personUploadArea'),
-    garmentUploadArea: document.getElementById('garmentUploadArea'),
-    
-    // Preview elements
     personPreview: document.getElementById('personPreview'),
     garmentPreview: document.getElementById('garmentPreview'),
     personImage: document.getElementById('personImage'),
     garmentImage: document.getElementById('garmentImage'),
     originalImage: document.getElementById('originalImage'),
     editedImage: document.getElementById('editedImage'),
-    
-    // Control elements
     controls: document.getElementById('controls'),
     garmentSection: document.getElementById('garmentSection'),
-    
-    // Tool buttons
     btnWhiteBg: document.getElementById('btn-white-bg'),
     btnSquareFormat: document.getElementById('btn-square-format'),
     btnSmile: document.getElementById('btn-smile'),
     btnVirtualTryOn: document.getElementById('btn-virtual-try-on'),
-    
-    // Action buttons
     btnDownload: document.getElementById('btn-download'),
     btnRetry: document.getElementById('btn-retry'),
-    btnCanvaExport: document.getElementById('btn-canva-export'),
-    
-    // Canva elements
     canvaPanel: document.getElementById('canvaPanel'),
     canvaStatus: document.getElementById('canvaStatus'),
     canvaIndicator: document.getElementById('canvaIndicator'),
     canvaStatusText: document.getElementById('canvaStatusText'),
     btnCanvaConnect: document.getElementById('btnCanvaConnect'),
     btnCanvaDisconnect: document.getElementById('btnCanvaDisconnect'),
-    
-    // UI elements
     loader: document.getElementById('loader'),
     apiNotice: document.getElementById('apiNotice')
 };
@@ -78,13 +56,12 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupEventListeners();
     showApiNotice();
-    console.log('🚀 Editor inicializado - Versión SIN Firebase Storage');
+    console.log('🚀 Editor inicializado - Versión Estable');
 });
 
 function initializeApp() {
     console.log('🚀 Editor de fotos inicializado correctamente');
     
-    // Verificar si hay API key configurada
     if (CONFIG.API_KEY === "TU_API_KEY_AQUI") {
         console.warn('⚠️ API Key no configurada');
     } else {
@@ -94,11 +71,9 @@ function initializeApp() {
 }
 
 function setupEventListeners() {
-    // Image upload events
     elements.imageUpload.addEventListener('change', handlePersonImageUpload);
     elements.garmentUpload.addEventListener('change', handleGarmentImageUpload);
     
-    // Tool button events - CSP compatible
     elements.btnWhiteBg.addEventListener('click', function() {
         standardTask('fondo blanco');
     });
@@ -110,16 +85,8 @@ function setupEventListeners() {
     });
     elements.btnVirtualTryOn.addEventListener('click', virtualTryOnTask);
     
-    // Action button events
     elements.btnDownload.addEventListener('click', downloadImage);
     elements.btnRetry.addEventListener('click', retryLastTask);
-    elements.btnCanvaExport.addEventListener('click', exportToCanvaPro);
-    
-    // Drag and drop events
-    setupDragAndDrop();
-    
-    // Initialize Canva state
-    checkCanvaConnection();
     
     console.log('✅ Event listeners configurados correctamente');
     console.log('✅ Modo: Upload local de imágenes - SIN Firebase Storage');
@@ -134,13 +101,11 @@ async function handlePersonImageUpload(event) {
     if (!file) return;
     
     try {
-        // Validar tipo de archivo
         if (!file.type.startsWith('image/')) {
-            showError('Por favor, selecciona una imagen válida (JPG, PNG, etc.)');
+            showError('Por favor, selecciona una imagen válida');
             return;
         }
         
-        // Validar tamaño (máximo 10MB)
         if (file.size > 10 * 1024 * 1024) {
             showError('La imagen es demasiado grande. Máximo 10MB.');
             return;
@@ -149,24 +114,19 @@ async function handlePersonImageUpload(event) {
         const base64 = await fileToBase64(file);
         base64ImageData = base64;
         
-        // Show preview with proper data URL - CSP compatible
         const dataUrl = 'data:' + file.type + ';base64,' + base64;
         elements.personImage.src = dataUrl;
         elements.personPreview.style.display = 'block';
         elements.originalImage.innerHTML = '<img src="' + dataUrl + '" alt="Imagen original">';
         
-        // Enable controls
         enableControls();
-        
-        // Show garment upload option
         elements.garmentSection.style.display = 'flex';
         
         console.log('✅ Imagen de persona cargada exitosamente');
-        console.log('📁 Archivo: ' + file.name + ' (' + (file.size / 1024 / 1024).toFixed(2) + 'MB)');
         
     } catch (error) {
         console.error('❌ Error al cargar imagen:', error);
-        showError('Error al cargar la imagen. Por favor, intenta con otro archivo.');
+        showError('Error al cargar la imagen');
     }
 }
 
@@ -175,13 +135,11 @@ async function handleGarmentImageUpload(event) {
     if (!file) return;
     
     try {
-        // Validar tipo de archivo
         if (!file.type.startsWith('image/')) {
-            showError('Por favor, selecciona una imagen válida (JPG, PNG, etc.)');
+            showError('Por favor, selecciona una imagen válida');
             return;
         }
         
-        // Validar tamaño (máximo 10MB)
         if (file.size > 10 * 1024 * 1024) {
             showError('La imagen es demasiado grande. Máximo 10MB.');
             return;
@@ -190,17 +148,15 @@ async function handleGarmentImageUpload(event) {
         const base64 = await fileToBase64(file);
         base64GarmentData = base64;
         
-        // Show preview with proper data URL - CSP compatible
         const dataUrl = 'data:' + file.type + ';base64,' + base64;
         elements.garmentImage.src = dataUrl;
         elements.garmentPreview.style.display = 'block';
         
         console.log('✅ Imagen de prenda cargada exitosamente');
-        console.log('📁 Archivo: ' + file.name + ' (' + (file.size / 1024 / 1024).toFixed(2) + 'MB)');
         
     } catch (error) {
         console.error('❌ Error al cargar prenda:', error);
-        showError('Error al cargar la imagen de la prenda. Por favor, intenta con otro archivo.');
+        showError('Error al cargar la imagen de la prenda');
     }
 }
 
@@ -217,9 +173,6 @@ function standardTask(promptText) {
     lastApiCall = { type: 'standard', prompt: promptText };
     
     const payload = {
-        system_instruction: {
-            parts: [{ text: CONFIG.SYSTEM_PROMPTS.standard }]
-        },
         contents: [{
             parts: [
                 { text: promptText },
@@ -255,9 +208,6 @@ function virtualTryOnTask() {
     lastApiCall = { type: 'virtual-try-on', prompt: 'virtual try-on' };
     
     const payload = {
-        system_instruction: {
-            parts: [{ text: CONFIG.SYSTEM_PROMPTS.virtualTryOn }]
-        },
         contents: [{
             parts: [
                 { text: 'virtual try-on' },
@@ -287,20 +237,16 @@ function virtualTryOnTask() {
 }
 
 // ===========================
-// API COMMUNICATION - GOOGLE AI
+// API COMMUNICATION
 // ===========================
 
 async function callApi(payload) {
     console.log('🚀 Iniciando edición con Google AI...');
-    showError('Procesando imagen con IA...', 'info');
-    
-    // Show loader
     showLoader(true);
     
     try {
-        // Check API key
         if (CONFIG.API_KEY === "TU_API_KEY_AQUI") {
-            showError('Error 403 (Forbidden): API Key no configurada. Por favor, configura tu API Key en el código JavaScript.');
+            showError('API Key no configurada');
             showLoader(false);
             return;
         }
@@ -316,24 +262,18 @@ async function callApi(payload) {
         });
         
         if (!response.ok) {
-            if (response.status === 403) {
-                throw new Error('Error 403 (Forbidden): API Key inválida o no habilitada. Verifica tu configuración.');
-            }
             throw new Error('Error ' + response.status + ': ' + response.statusText);
         }
         
         const data = await response.json();
         console.log('📨 Respuesta recibida de Google AI:', data);
         
-        // Extract image from response
         const imageBase64 = extractImageFromResponse(data);
         
         if (imageBase64) {
-            // Show result with proper data URL - CSP compatible
             const editedDataUrl = 'data:image/jpeg;base64,' + imageBase64;
             elements.editedImage.innerHTML = '<img src="' + editedDataUrl + '" alt="Imagen editada">';
             
-            // Enable action buttons
             elements.btnDownload.disabled = false;
             elements.btnRetry.disabled = false;
             
@@ -364,7 +304,7 @@ async function fetchWithBackoff(url, options, maxRetries) {
         } catch (error) {
             if (i === maxRetries) throw error;
             
-            const delay = Math.pow(2, i) * 1000; // Exponential backoff
+            const delay = Math.pow(2, i) * 1000;
             console.log('Reintentando en ' + delay + 'ms... (' + (i + 1) + '/' + maxRetries + ')');
             await new Promise(function(resolve) {
                 setTimeout(resolve, delay);
@@ -379,26 +319,23 @@ async function fetchWithBackoff(url, options, maxRetries) {
 
 function extractImageFromResponse(data) {
     try {
-        console.log('🔍 Analizando estructura de respuesta:', data);
+        console.log('🔍 Analizando respuesta:', data);
         
-        // Buscar imagen en diferentes formatos de respuesta
         if (data.candidates && data.candidates[0] && data.candidates[0].content) {
             const parts = data.candidates[0].content.parts;
             
-            // Verificar que parts existe y es un array
-            if (!parts || !Array.isArray(parts) || parts.length === 0) {
-                console.log('⚠️ No hay parts en la respuesta o está vacío');
+            if (!parts || !Array.isArray(parts)) {
+                console.log('⚠️ No hay parts válidas');
                 return null;
             }
             
             for (let i = 0; i < parts.length; i++) {
                 const part = parts[i];
                 if (part.inline_data && part.inline_data.data) {
-                    console.log('✅ Imagen encontrada en inline_data');
+                    console.log('✅ Imagen encontrada');
                     return part.inline_data.data;
                 }
                 if (part.text && part.text.indexOf('data:image') !== -1) {
-                    // Extraer base64 del texto
                     const match = part.text.match(/data:image\/[a-z]+;base64,([a-zA-Z0-9+\/=]+)/);
                     if (match) {
                         console.log('✅ Imagen encontrada en texto');
@@ -408,25 +345,6 @@ function extractImageFromResponse(data) {
             }
         }
         
-        // Buscar en otros posibles formatos
-        if (data.content && data.content.parts) {
-            const parts = data.content.parts;
-            if (parts && Array.isArray(parts)) {
-                for (let i = 0; i < parts.length; i++) {
-                    const part = parts[i];
-                    if (part.inline_data && part.inline_data.data) {
-                        console.log('✅ Imagen encontrada en content.parts');
-                        return part.inline_data.data;
-                    }
-                }
-            }
-        }
-        
-        // Verificar si la respuesta indica un problema
-        if (data.candidates && data.candidates[0] && data.candidates[0].finishReason) {
-            console.log('❌ Razón de finalización:', data.candidates[0].finishReason);
-        }
-        
         console.log('❌ No se encontró imagen en la respuesta');
         return null;
     } catch (error) {
@@ -434,35 +352,8 @@ function extractImageFromResponse(data) {
         return null;
     }
 }
-    try {
-        // Buscar imagen en diferentes formatos de respuesta
-        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-            const parts = data.candidates[0].content.parts;
-            
-            for (let i = 0; i < parts.length; i++) {
-                const part = parts[i];
-                if (part.inline_data && part.inline_data.data) {
-                    return part.inline_data.data;
-                }
-                if (part.text && part.text.indexOf('data:image') !== -1) {
-                    // Extraer base64 del texto
-                    const match = part.text.match(/data:image\/[a-z]+;base64,([a-zA-Z0-9+\/=]+)/);
-                    if (match) {
-                        return match[1];
-                    }
-                }
-            }
-        }
-        
-        return null;
-    } catch (error) {
-        console.error('Error extrayendo imagen:', error);
-        return null;
-    }
-}
 
 function analyzeApiResponse(data) {
-    // Analizar diferentes tipos de respuestas de error
     if (data.candidates && data.candidates[0] && data.candidates[0].finishReason) {
         const reason = data.candidates[0].finishReason;
         
@@ -494,7 +385,6 @@ function downloadImage() {
     if (!img) return;
     
     try {
-        // Convertir data URL a blob
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
@@ -506,8 +396,6 @@ function downloadImage() {
             
             canvas.toBlob(function(blob) {
                 if (blob) {
-                    editedImageBlob = blob;
-                    
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
@@ -562,7 +450,6 @@ function showError(message, type) {
         type = 'error';
     }
     
-    // Configuración de tipos de notificación
     const typeConfig = {
         error: {
             background: '#DC3545',
@@ -580,7 +467,6 @@ function showError(message, type) {
     
     const config = typeConfig[type] || typeConfig.error;
     
-    // Crear notificación - CSP compatible
     const notificationDiv = document.createElement('div');
     notificationDiv.className = 'notification';
     
@@ -588,7 +474,6 @@ function showError(message, type) {
     
     notificationDiv.innerHTML = svgIcon + '<span>' + message + '</span>';
     
-    // Estilos para la notificación
     Object.assign(notificationDiv.style, {
         position: 'fixed',
         top: '20px',
@@ -604,30 +489,15 @@ function showError(message, type) {
         maxWidth: '400px',
         boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
         fontSize: '14px',
-        fontWeight: '500',
-        animation: 'slideInRight 0.3s ease-out'
+        fontWeight: '500'
     });
     
     document.body.appendChild(notificationDiv);
     
-    // Agregar animación CSS si no existe
-    if (!document.querySelector('#notification-styles')) {
-        const style = document.createElement('style');
-        style.id = 'notification-styles';
-        style.textContent = '@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }';
-        document.head.appendChild(style);
-    }
-    
-    // Remover después de 5 segundos para errores, 3 segundos para otros
     const timeout = type === 'error' ? 5000 : 3000;
     setTimeout(function() {
         if (notificationDiv.parentNode) {
-            notificationDiv.style.animation = 'slideInRight 0.3s ease-out reverse';
-            setTimeout(function() {
-                if (notificationDiv.parentNode) {
-                    notificationDiv.parentNode.removeChild(notificationDiv);
-                }
-            }, 300);
+            notificationDiv.parentNode.removeChild(notificationDiv);
         }
     }, timeout);
 }
@@ -637,65 +507,6 @@ function showApiNotice() {
         elements.apiNotice.style.display = 'flex';
     } else {
         elements.apiNotice.style.display = 'none';
-    }
-}
-
-function setupDragAndDrop() {
-    const uploadAreas = [elements.personUploadArea, elements.garmentUploadArea];
-    
-    for (let i = 0; i < uploadAreas.length; i++) {
-        const area = uploadAreas[i];
-        
-        // Prevent default drag behaviors
-        const events = ['dragenter', 'dragover', 'dragleave', 'drop'];
-        for (let j = 0; j < events.length; j++) {
-            const eventName = events[j];
-            area.addEventListener(eventName, preventDefaults, false);
-            document.body.addEventListener(eventName, preventDefaults, false);
-        }
-        
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        
-        // Highlight drop area when item is dragged over it
-        ['dragenter', 'dragover'].forEach(function(eventName) {
-            area.addEventListener(eventName, highlight, false);
-        });
-        
-        ['dragleave', 'drop'].forEach(function(eventName) {
-            area.addEventListener(eventName, unhighlight, false);
-        });
-        
-        function highlight() {
-            area.style.borderColor = '#FF6B6B';
-            area.style.background = '#FFE6E6';
-        }
-        
-        function unhighlight() {
-            area.style.borderColor = '#DEE2E6';
-            area.style.background = '#FAFAFA';
-        }
-        
-        // Handle dropped files
-        area.addEventListener('drop', handleDrop, false);
-        
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            
-            if (files.length > 0) {
-                const file = files[0];
-                if (area.id === 'personUploadArea') {
-                    elements.imageUpload.files = files;
-                    elements.imageUpload.dispatchEvent(new Event('change'));
-                } else if (area.id === 'garmentUploadArea') {
-                    elements.garmentUpload.files = files;
-                    elements.garmentUpload.dispatchEvent(new Event('change'));
-                }
-            }
-        }
     }
 }
 
@@ -709,7 +520,6 @@ function fileToBase64(file) {
         reader.readAsDataURL(file);
         reader.onload = function() {
             const result = reader.result;
-            // Remove data URL prefix to get pure base64
             const base64 = result.split(',')[1];
             resolve(base64);
         };
@@ -719,75 +529,4 @@ function fileToBase64(file) {
     });
 }
 
-// ===========================
-// CANVA PRO INTEGRATION (SIMULATED)
-// ===========================
-
-// Check Canva connection status
-function checkCanvaConnection() {
-    const accessToken = localStorage.getItem('canva_access_token');
-    
-    if (accessToken) {
-        updateCanvaStatus('connected');
-    } else {
-        updateCanvaStatus('disconnected');
-    }
-}
-
-function updateCanvaStatus(status) {
-    if (status === 'connected') {
-        elements.canvaIndicator.classList.add('connected');
-        elements.canvaStatusText.textContent = 'Conectado';
-        elements.btnCanvaConnect.style.display = 'none';
-        elements.btnCanvaDisconnect.style.display = 'flex';
-        elements.btnCanvaExport.disabled = false;
-    } else {
-        elements.canvaIndicator.classList.remove('connected');
-        elements.canvaStatusText.textContent = 'Desconectado';
-        elements.btnCanvaConnect.style.display = 'flex';
-        elements.btnCanvaDisconnect.style.display = 'none';
-        elements.btnCanvaExport.disabled = true;
-    }
-}
-
-// Disconnect from Canva
-function disconnectCanva() {
-    localStorage.removeItem('canva_access_token');
-    updateCanvaStatus('disconnected');
-    showError('Desconectado de Canva Pro', 'info');
-}
-
-// Make function global for onclick handler
-window.disconnectCanva = disconnectCanva;
-
-// Export to Canva Pro function (SIMULATED)
-function exportToCanvaPro() {
-    const accessToken = localStorage.getItem('canva_access_token');
-    
-    if (!accessToken) {
-        showError('Necesitas conectar con Canva Pro primero');
-        return;
-    }
-    
-    // Check if there's an edited image
-    const img = elements.editedImage.querySelector('img');
-    if (!img) {
-        showError('No hay imagen editada para exportar');
-        return;
-    }
-    
-    showError('Exportando imagen a Canva Pro...', 'info');
-    
-    // Simular exportación a Canva
-    setTimeout(function() {
-        console.log('📤 Simulación: Imagen exportada a Canva Pro');
-        showError('Imagen exportada exitosamente a Canva Pro (simulación)', 'success');
-    }, 2000);
-}
-
-// Función para inicializar integración con Canva (SIMULADA)
-function initializeCanvaIntegration() {
-    console.log('ℹ️ Canva Pro: Modo simulado (requiere credenciales reales)');
-}
-
-console.log('🎨 Editor de Fotos E-commerce - LIMPIO SIN Firebase Storage');
+console.log('🎨 Editor de Fotos E-commerce - VERSIÓN ESTABLE');
