@@ -6,7 +6,7 @@
 // Configuration
 const CONFIG = {
     API_KEY: "AIzaSyBAuTlMG2kQWBIpaylzCUhGJopB2JcNh6I",
-    API_ENDPOINT: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+    API_ENDPOINT: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
     
     SYSTEM_PROMPTS: {
         standard: "Eres un editor de fotos profesional para e-commerce. Edita la imagen manteniendo a la persona intacta, solo modifica el fondo, formato o expresión. Asegúrate de que la imagen final tenga calidad profesional. Devuelve SOLO la imagen editada en formato base64 sin texto adicional.",
@@ -253,10 +253,11 @@ async function callApi(payload) {
         
         console.log('📡 Enviando solicitud a Google AI...');
         
-        const response = await fetchWithBackoff(CONFIG.API_ENDPOINT + '?key=' + CONFIG.API_KEY, {
+        const response = await fetchWithBackoff(CONFIG.API_ENDPOINT, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'x-goog-api-key': CONFIG.API_KEY,
             },
             body: JSON.stringify(payload)
         });
