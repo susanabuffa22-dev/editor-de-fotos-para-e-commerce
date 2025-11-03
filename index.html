@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editor de Fotos E-commerce - Con Rate Limiting</title>
+    <title>Editor de Fotos E-commerce - Con CanvaPro Integration</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -306,6 +306,18 @@
             color: white;
         }
 
+        /* Botón CanvaPro */
+        .canva-btn {
+            background: #8b5cf6 !important;
+            border-color: #8b5cf6 !important;
+        }
+
+        .canva-btn:hover:not(:disabled) {
+            background: #7c3aed !important;
+            border-color: #7c3aed !important;
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4) !important;
+        }
+
         /* Loading mejorado */
         .loading {
             display: flex;
@@ -343,7 +355,7 @@
             font-style: italic;
         }
 
-        /* Descarga */
+        /* Descarga y CanvaPro */
         .download-section {
             text-align: center;
             padding: 30px;
@@ -352,20 +364,30 @@
             border: 2px solid #e2e8f0;
         }
 
-        .download-btn {
-            padding: 18px 45px;
-            background: #059669;
-            color: white;
+        .download-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .download-btn, .canva-export-btn {
+            padding: 18px 35px;
             border: none;
             border-radius: 12px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
             gap: 12px;
-            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .download-btn {
+            background: #059669;
+            color: white;
         }
 
         .download-btn:hover:not(:disabled) {
@@ -374,7 +396,18 @@
             box-shadow: 0 8px 24px rgba(5, 150, 105, 0.4);
         }
 
-        .download-btn:disabled {
+        .canva-export-btn {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .canva-export-btn:hover:not(:disabled) {
+            background: #7c3aed;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+        }
+
+        .download-btn:disabled, .canva-export-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             background: #94a3b8;
@@ -405,6 +438,57 @@
             display: none;
         }
 
+        /* Modal para workflow CanvaPro */
+        .workflow-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .workflow-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .workflow-steps {
+            text-align: left;
+            margin: 20px 0;
+        }
+
+        .workflow-step {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .step-number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .mode-format .boxes-container,
@@ -414,6 +498,11 @@
 
             .tools-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .download-buttons {
+                flex-direction: column;
+                align-items: center;
             }
 
             .header h1 {
@@ -431,7 +520,7 @@
         <!-- Header -->
         <header class="header">
             <h1>Editor de Fotos E-commerce</h1>
-            <p>Herramientas profesionales con manejo inteligente de límites de API</p>
+            <p>Herramientas profesionales con Rate Limiting + Integración CanvaPro</p>
         </header>
 
         <!-- Alerta de Rate Limiting -->
@@ -560,22 +649,31 @@
         <div class="error-message" id="error-message"></div>
         <div class="success-message" id="success-message"></div>
 
-        <!-- Descarga -->
+        <!-- Descarga y Exportación -->
         <div class="download-section">
-            <button class="download-btn" id="download-btn" disabled>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                    <polyline points="7,10 12,15 17,10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-                Descargar Imagen Editada
-            </button>
+            <h3 style="margin-bottom: 20px; color: #374151;">📥 Exportar Resultado</h3>
+            <div class="download-buttons">
+                <button class="download-btn" id="download-btn" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                        <polyline points="7,10 12,15 17,10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Descargar Imagen
+                </button>
+                <button class="canva-export-btn" id="canva-export-btn" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                    Enviar a CanvaPro
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
         // ===========================
-        // EDITOR CON RATE LIMITING
+        // EDITOR CON RATE LIMITING Y CANVAPRO
         // ===========================
         
         // Configuración API
@@ -601,7 +699,7 @@
         // INICIALIZACIÓN
         // ===========================
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Editor Simplificado con Rate Limiting');
+            console.log('🚀 Editor con Rate Limiting + CanvaPro');
             
             // Ocultar mensajes de API
             hideApiMessages();
@@ -615,7 +713,7 @@
             // Configurar modo inicial
             switchMode('format');
             
-            console.log('✅ Editor listo para usar');
+            console.log('✅ Editor + CanvaPro listo para usar');
         });
 
         // ===========================
@@ -653,8 +751,9 @@
             elements.btnSquareFormat = document.getElementById('btn-square-format');
             elements.btnVirtualTryOn = document.getElementById('btn-virtual-try-on');
             
-            // Acciones
+            // Exportación
             elements.downloadBtn = document.getElementById('download-btn');
+            elements.canvaExportBtn = document.getElementById('canva-export-btn');
             elements.errorMessage = document.getElementById('error-message');
             elements.successMessage = document.getElementById('success-message');
             elements.rateLimitInfo = document.getElementById('rateLimitInfo');
@@ -697,9 +796,13 @@
                 processImage('virtual-try-on');
             });
             
-            // Descarga
+            // Exportación
             elements.downloadBtn.addEventListener('click', function() {
                 downloadImage();
+            });
+            
+            elements.canvaExportBtn.addEventListener('click', function() {
+                exportToCanvaPro();
             });
         }
 
@@ -829,6 +932,12 @@
             elements.btnVirtualTryOn.disabled = !enabled;
         }
 
+        function updateExportButtons() {
+            var hasProcessedImage = processedImageData !== null;
+            elements.downloadBtn.disabled = !hasProcessedImage;
+            elements.canvaExportBtn.disabled = !hasProcessedImage;
+        }
+
         // ===========================
         // PROCESAMIENTO CON RATE LIMITING
         // ===========================
@@ -880,7 +989,13 @@
                 if (response.success && response.imageData) {
                     processedImageData = response.imageData;
                     showProcessedImage(resultDisplay, response.imageData);
-                    elements.downloadBtn.disabled = false;
+                    updateExportButtons();
+                    
+                    // Preguntar si quiere enviar a CanvaPro
+                    setTimeout(function() {
+                        askSendToCanvaPro(response.imageData, action);
+                    }, 1500);
+                    
                     showSuccess('Imagen procesada correctamente');
                 } else {
                     showError(response.error || 'Error al procesar la imagen');
@@ -977,6 +1092,188 @@
             
             container.innerHTML = '';
             container.appendChild(img);
+        }
+
+        // ===========================
+        // INTEGRACIÓN CANVAPRO
+        // ===========================
+        function askSendToCanvaPro(imageData, action) {
+            var modal = document.createElement('div');
+            modal.className = 'workflow-modal';
+            modal.style.display = 'flex';
+            
+            var content = document.createElement('div');
+            content.className = 'workflow-content';
+            
+            var designTitle = currentMode === 'format' ? 'Producto E-commerce' : 'Virtual Try-On';
+            
+            content.innerHTML = `
+                <div style="font-size: 48px; margin-bottom: 20px;">🎨</div>
+                <h3 style="margin-bottom: 15px; color: #374151;">¿Enviar a CanvaPro?</h3>
+                <p style="margin-bottom: 20px; color: #64748b;">
+                    Tu imagen está lista. ¿Quieres editarla profesionalmente en Canva?
+                </p>
+                
+                <div class="workflow-steps">
+                    <div class="workflow-step">
+                        <div class="step-number">1</div>
+                        <div>
+                            <strong>Procesamiento AI</strong><br>
+                            <small>Imagen ya procesada con IA</small>
+                        </div>
+                    </div>
+                    <div class="workflow-step">
+                        <div class="step-number">2</div>
+                        <div>
+                            <strong>Edición CanvaPro</strong><br>
+                            <small>Agregar texto, logos, elementos</small>
+                        </div>
+                    </div>
+                    <div class="workflow-step">
+                        <div class="step-number">3</div>
+                        <div>
+                            <strong>Diseño Final</strong><br>
+                            <small>Resultado profesional listo</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 15px; justify-content: center; margin-top: 25px;">
+                    <button onclick="sendToCanvaPro('${imageData}', '${designTitle}'); this.closest('.workflow-modal').remove();" 
+                            style="padding: 12px 24px; background: #8b5cf6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        🎨 Sí, enviar a CanvaPro
+                    </button>
+                    <button onclick="this.closest('.workflow-modal').remove();" 
+                            style="padding: 12px 24px; background: #6b7280; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                        No, descargar aquí
+                    </button>
+                </div>
+            `;
+            
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+        }
+
+        function sendToCanvaPro(imageData, designTitle) {
+            console.log('🎨 Enviando a CanvaPro...');
+            
+            try {
+                // Crear blob de la imagen
+                var canvas = document.createElement('canvas');
+                var ctx = canvas.getContext('2d');
+                
+                // Cargar imagen en canvas
+                var img = new Image();
+                img.onload = function() {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // Convertir a blob
+                    canvas.toBlob(function(blob) {
+                        // Crear URL temporal para descarga
+                        var blobUrl = URL.createObjectURL(blob);
+                        
+                        // Abrir Canva en nueva ventana con imagen cargada
+                        var canvaUrl = 'https://www.canva.com/design/create?type=photo';
+                        var newWindow = window.open(canvaUrl, '_blank');
+                        
+                        // Preparar instrucciones para el usuario
+                        setTimeout(function() {
+                            showWorkflowInstructions(blobUrl, designTitle);
+                        }, 2000);
+                        
+                        showSuccess('🎨 Imagen enviada a CanvaPro. Sigue las instrucciones en pantalla.');
+                    }, 'image/jpeg', 0.95);
+                };
+                
+                img.src = imageData;
+                
+            } catch (error) {
+                console.error('Error enviando a CanvaPro:', error);
+                showError('Error al enviar a CanvaPro: ' + error.message);
+            }
+        }
+
+        function showWorkflowInstructions(blobUrl, designTitle) {
+            var modal = document.createElement('div');
+            modal.className = 'workflow-modal';
+            modal.style.display = 'flex';
+            
+            var content = document.createElement('div');
+            content.className = 'workflow-content';
+            
+            content.innerHTML = `
+                <div style="font-size: 48px; margin-bottom: 20px;">📋</div>
+                <h3 style="margin-bottom: 15px; color: #374151;">Instrucciones para CanvaPro</h3>
+                <p style="margin-bottom: 20px; color: #64748b;">
+                    Sigue estos pasos para usar tu imagen en CanvaPro:
+                </p>
+                
+                <div class="workflow-steps">
+                    <div class="workflow-step">
+                        <div class="step-number">1</div>
+                        <div>
+                            <strong>Descarga la imagen</strong><br>
+                            <small>Haz clic en el botón de descarga abajo</small>
+                        </div>
+                    </div>
+                    <div class="workflow-step">
+                        <div class="step-number">2</div>
+                        <div>
+                            <strong>Sube a Canva</strong><br>
+                            <small>Arrastra la imagen a tu diseño en Canva</small>
+                        </div>
+                    </div>
+                    <div class="workflow-step">
+                        <div class="step-number">3</div>
+                        <div>
+                            <strong>Edita profesionalmente</strong><br>
+                            <small>Agrega texto, logos, elementos gráficos</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 25px;">
+                    <button onclick="downloadTempImage('${blobUrl}', '${designTitle}'); this.closest('.workflow-modal').remove();" 
+                            style="padding: 12px 24px; background: #8b5cf6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-right: 10px;">
+                        📥 Descargar Imagen
+                    </button>
+                    <button onclick="this.closest('.workflow-modal').remove();" 
+                            style="padding: 12px 24px; background: #6b7280; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                        Entendido
+                    </button>
+                </div>
+            `;
+            
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+        }
+
+        function downloadTempImage(blobUrl, designTitle) {
+            try {
+                var link = document.createElement('a');
+                link.download = designTitle.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now() + '.jpg';
+                link.href = blobUrl;
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showSuccess('📥 Imagen descargada. Ahora súbela a CanvaPro.');
+            } catch (error) {
+                showError('Error al descargar: ' + error.message);
+            }
+        }
+
+        function exportToCanvaPro() {
+            if (!processedImageData) {
+                showError('Primero procesa una imagen para exportarla');
+                return;
+            }
+            
+            var designTitle = currentMode === 'format' ? 'Producto E-commerce' : 'Virtual Try-On';
+            sendToCanvaPro(processedImageData, designTitle);
         }
 
         // ===========================
@@ -1199,6 +1496,7 @@
             console.log('Botón formato cuadrado:', elements.btnSquareFormat.disabled ? 'Deshabilitado' : 'Habilitado');
             console.log('Botón virtual try-on:', elements.btnVirtualTryOn.disabled ? 'Deshabilitado' : 'Habilitado');
             console.log('Botón descarga:', elements.downloadBtn.disabled ? 'Deshabilitado' : 'Habilitado');
+            console.log('Botón CanvaPro:', elements.canvaExportBtn.disabled ? 'Deshabilitado' : 'Habilitado');
             console.log('=====================================');
         }
     </script>
