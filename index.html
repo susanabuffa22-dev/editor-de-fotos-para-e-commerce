@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editor de Fotos E-commerce - Versión Simplificada</title>
+    <title>Editor de Fotos E-commerce - Con Rate Limiting</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -53,6 +53,30 @@
         .header p {
             font-size: 1.1rem;
             opacity: 0.9;
+        }
+
+        /* Alerta de Rate Limiting */
+        .rate-limit-info {
+            background: #fef3cd;
+            border: 2px solid #f6e05e;
+            color: #d69e2e;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .rate-limit-info.warning {
+            background: #fed7d7;
+            border-color: #fc8181;
+            color: #c53030;
+        }
+
+        .rate-limit-info.success {
+            background: #c6f6d5;
+            border-color: #68d391;
+            color: #2f855a;
         }
 
         /* Modos */
@@ -282,7 +306,7 @@
             color: white;
         }
 
-        /* Loading */
+        /* Loading mejorado */
         .loading {
             display: flex;
             flex-direction: column;
@@ -290,6 +314,7 @@
             justify-content: center;
             gap: 20px;
             padding: 40px;
+            text-align: center;
         }
 
         .spinner {
@@ -310,6 +335,12 @@
             color: #64748b;
             font-weight: 600;
             font-size: 1.1rem;
+        }
+
+        .loading-info {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            font-style: italic;
         }
 
         /* Descarga */
@@ -351,7 +382,7 @@
             box-shadow: none;
         }
 
-        /* Mensajes */
+        /* Mensajes mejorados */
         .error-message, .success-message {
             padding: 20px;
             border-radius: 12px;
@@ -400,8 +431,13 @@
         <!-- Header -->
         <header class="header">
             <h1>Editor de Fotos E-commerce</h1>
-            <p>Herramientas profesionales simplificadas para tu tienda online</p>
+            <p>Herramientas profesionales con manejo inteligente de límites de API</p>
         </header>
+
+        <!-- Alerta de Rate Limiting -->
+        <div class="rate-limit-info" id="rateLimitInfo">
+            🚀 <strong>Rate Limiting Activo:</strong> Las peticiones se procesan secuencialmente para evitar errores 429
+        </div>
 
         <!-- Selector de Modo -->
         <div class="mode-selector">
@@ -539,10 +575,9 @@
 
     <script>
         // ===========================
-        // EDITOR SIMPLIFICADO CSP-SAFE
+        // EDITOR CON RATE LIMITING
         // ===========================
-        // 🎯 Versión ultra simplificada y compatible con CSP
-
+        
         // Configuración API
         var API_KEY = 'AIzaSyBAuTlMG2kQWBIpaylzCUhGJopB2JcNh6I';
         var API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=' + API_KEY;
@@ -554,6 +589,10 @@
         var garmentImageData = null;
         var processedImageData = null;
         var isProcessing = false;
+        var requestQueue = [];
+        var isProcessingQueue = false;
+        var requestDelay = 2000; // 2 segundos entre peticiones
+        var lastRequestTime = 0;
 
         // Elementos DOM
         var elements = {};
@@ -562,7 +601,7 @@
         // INICIALIZACIÓN
         // ===========================
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Editor Simplificado Iniciado');
+            console.log('🚀 Editor Simplificado con Rate Limiting');
             
             // Ocultar mensajes de API
             hideApiMessages();
@@ -618,6 +657,7 @@
             elements.downloadBtn = document.getElementById('download-btn');
             elements.errorMessage = document.getElementById('error-message');
             elements.successMessage = document.getElementById('success-message');
+            elements.rateLimitInfo = document.getElementById('rateLimitInfo');
         }
 
         function setupEventListeners() {
@@ -790,7 +830,7 @@
         }
 
         // ===========================
-        // PROCESAMIENTO DE IMÁGENES
+        // PROCESAMIENTO CON RATE LIMITING
         // ===========================
         function processImage(action) {
             if (isProcessing) {
@@ -830,8 +870,10 @@
             showLoading(resultDisplay);
             isProcessing = true;
             
-            // Procesar con la API
-            sendToAPI(imageData, prompt, function(response) {
+            // Agregar a la cola con rate limiting
+            addToQueue(function() {
+                return sendToAPI(imageData, prompt);
+            }, function(response) {
                 hideLoading(resultDisplay);
                 isProcessing = false;
                 
@@ -846,8 +888,51 @@
             }, function(error) {
                 hideLoading(resultDisplay);
                 isProcessing = false;
-                showError('Error de conexión: ' + error);
+                handleAPIError(error, action);
             });
+        }
+
+        function addToQueue(requestFunction, successCallback, errorCallback) {
+            var requestItem = {
+                request: requestFunction,
+                success: successCallback,
+                error: errorCallback
+            };
+            
+            requestQueue.push(requestItem);
+            
+            if (!isProcessingQueue) {
+                processQueue();
+            }
+        }
+
+        function processQueue() {
+            if (requestQueue.length === 0) {
+                isProcessingQueue = false;
+                return;
+            }
+            
+            isProcessingQueue = true;
+            var currentRequest = requestQueue.shift();
+            
+            // Calcular delay necesario
+            var now = Date.now();
+            var timeSinceLastRequest = now - lastRequestTime;
+            var delay = Math.max(0, requestDelay - timeSinceLastRequest);
+            
+            setTimeout(function() {
+                currentRequest.request()
+                    .then(function(response) {
+                        lastRequestTime = Date.now();
+                        currentRequest.success(response);
+                        processQueue();
+                    })
+                    .catch(function(error) {
+                        lastRequestTime = Date.now();
+                        currentRequest.error(error);
+                        processQueue();
+                    });
+            }, delay);
         }
 
         function showLoading(container) {
@@ -862,8 +947,13 @@
             text.className = 'loading-text';
             text.textContent = 'Procesando imagen...';
             
+            var info = document.createElement('p');
+            info.className = 'loading-info';
+            info.textContent = 'Las peticiones se procesan secuencialmente para evitar errores 429';
+            
             loading.appendChild(spinner);
             loading.appendChild(text);
+            loading.appendChild(info);
             
             container.innerHTML = '';
             container.appendChild(loading);
@@ -890,68 +980,79 @@
         }
 
         // ===========================
-        // COMUNICACIÓN CON API
+        // COMUNICACIÓN CON API CON MANEJO DE ERRORES
         // ===========================
-        function sendToAPI(imageData, prompt, successCallback, errorCallback) {
-            try {
-                // Crear request
-                var requestData = {
-                    contents: [{
-                        parts: [
-                            {
-                                text: prompt
-                            },
-                            {
-                                inline_data: {
-                                    mime_type: 'image/jpeg',
-                                    data: imageData.split(',')[1]
+        function sendToAPI(imageData, prompt) {
+            return new Promise(function(resolve, reject) {
+                try {
+                    // Crear request
+                    var requestData = {
+                        contents: [{
+                            parts: [
+                                {
+                                    text: prompt
+                                },
+                                {
+                                    inline_data: {
+                                        mime_type: 'image/jpeg',
+                                        data: imageData.split(',')[1]
+                                    }
                                 }
-                            }
-                        ]
-                    }],
-                    generationConfig: {
-                        temperature: 0.7,
-                        topK: 40,
-                        topP: 0.95,
-                        maxOutputTokens: 2048
-                    }
-                };
-                
-                // XMLHttpRequest para compatibilidad CSP
-                var xhr = new XMLHttpRequest();
-                xhr.open('POST', API_ENDPOINT, true);
-                xhr.setRequestHeader('Content-Type', 'application/json');
-                
-                xhr.onload = function() {
-                    if (xhr.status === 200) {
-                        try {
-                            var response = JSON.parse(xhr.responseText);
-                            handleAPIResponse(response, successCallback);
-                        } catch (e) {
-                            errorCallback('Error de respuesta: ' + e.message);
+                            ]
+                        }],
+                        generationConfig: {
+                            temperature: 0.7,
+                            topK: 40,
+                            topP: 0.95,
+                            maxOutputTokens: 2048
                         }
-                    } else {
-                        errorCallback('Error HTTP: ' + xhr.status);
-                    }
-                };
-                
-                xhr.onerror = function() {
-                    errorCallback('Error de red');
-                };
-                
-                xhr.timeout = 30000;
-                xhr.ontimeout = function() {
-                    errorCallback('Timeout: La solicitud tomó demasiado tiempo');
-                };
-                
-                xhr.send(JSON.stringify(requestData));
-                
-            } catch (e) {
-                errorCallback('Error: ' + e.message);
-            }
+                    };
+                    
+                    // XMLHttpRequest para compatibilidad CSP
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', API_ENDPOINT, true);
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    
+                    xhr.onload = function() {
+                        if (xhr.status === 200) {
+                            try {
+                                var response = JSON.parse(xhr.responseText);
+                                var result = handleAPIResponse(response);
+                                if (result.success) {
+                                    resolve(result);
+                                } else {
+                                    reject(result.error);
+                                }
+                            } catch (e) {
+                                reject('Error de respuesta: ' + e.message);
+                            }
+                        } else if (xhr.status === 429) {
+                            reject('rate_limit_exceeded');
+                        } else if (xhr.status === 403) {
+                            reject('api_quota_exceeded');
+                        } else {
+                            reject('Error HTTP: ' + xhr.status);
+                        }
+                    };
+                    
+                    xhr.onerror = function() {
+                        reject('Error de red');
+                    };
+                    
+                    xhr.timeout = 45000;
+                    xhr.ontimeout = function() {
+                        reject('Timeout: La solicitud tomó demasiado tiempo');
+                    };
+                    
+                    xhr.send(JSON.stringify(requestData));
+                    
+                } catch (e) {
+                    reject('Error: ' + e.message);
+                }
+            });
         }
 
-        function handleAPIResponse(response, callback) {
+        function handleAPIResponse(response) {
             try {
                 if (response.candidates && response.candidates.length > 0) {
                     var candidate = response.candidates[0];
@@ -963,28 +1064,64 @@
                             var part = parts[i];
                             
                             if (part.inlineData) {
-                                var imageData = 'data:image/jpeg;base64,' + part.inlineData.data;
-                                callback({
+                                return {
                                     success: true,
-                                    imageData: imageData
-                                });
-                                return;
+                                    imageData: 'data:image/jpeg;base64,' + part.inlineData.data
+                                };
                             }
                         }
                     }
                 }
                 
-                callback({
+                return {
                     success: false,
                     error: 'No se encontró imagen en la respuesta'
-                });
+                };
                 
             } catch (e) {
-                callback({
+                return {
                     success: false,
                     error: 'Error procesando respuesta: ' + e.message
-                });
+                };
             }
+        }
+
+        function handleAPIError(error, action) {
+            if (error === 'rate_limit_exceeded') {
+                showRateLimitWarning();
+                
+                // Aumentar el delay temporalmente
+                requestDelay = 5000;
+                
+                setTimeout(function() {
+                    showSuccess('Sistema de rate limiting activado. Las peticiones ahora se procesan con mayor espaciado.');
+                    requestDelay = 2000;
+                }, 3000);
+                
+            } else if (error === 'api_quota_exceeded') {
+                showError('❌ Has excedido la cuota diaria de la API. Por favor espera hasta mañana o actualiza la cuota en Google Cloud Console.');
+            } else if (error.includes('Timeout')) {
+                showError('⏰ La imagen es muy compleja. Intenta con una imagen más pequeña o espera unos minutos.');
+            } else if (error.includes('Error de red')) {
+                showError('🌐 Error de conexión. Verifica tu internet e intenta de nuevo.');
+            } else {
+                showError('❌ Error: ' + error);
+            }
+        }
+
+        function showRateLimitWarning() {
+            elements.rateLimitInfo.className = 'rate-limit-info warning';
+            elements.rateLimitInfo.innerHTML = '⚠️ <strong>Rate Limit Detectado:</strong> Esperando 5 segundos antes del siguiente intento...';
+            
+            setTimeout(function() {
+                elements.rateLimitInfo.className = 'rate-limit-info success';
+                elements.rateLimitInfo.innerHTML = '✅ <strong>Rate Limiting Adaptativo:</strong> Ahora procesando con mayor espaciado para evitar errores 429';
+                
+                setTimeout(function() {
+                    elements.rateLimitInfo.className = 'rate-limit-info';
+                    elements.rateLimitInfo.innerHTML = '🚀 <strong>Rate Limiting Activo:</strong> Las peticiones se procesan secuencialmente para evitar errores 429';
+                }, 3000);
+            }, 2000);
         }
 
         // ===========================
@@ -1028,7 +1165,7 @@
             
             setTimeout(function() {
                 elements.errorMessage.style.display = 'none';
-            }, 5000);
+            }, 7000);
         }
 
         function showSuccess(message) {
@@ -1056,6 +1193,8 @@
             console.log('Imagen persona:', personImageData ? 'Cargada' : 'No cargada');
             console.log('Imagen prenda:', garmentImageData ? 'Cargada' : 'No cargada');
             console.log('Imagen procesada:', processedImageData ? 'Lista' : 'No disponible');
+            console.log('Cola de peticiones:', requestQueue.length);
+            console.log('Delay entre peticiones:', requestDelay + 'ms');
             console.log('Botón fondo blanco:', elements.btnWhiteBg.disabled ? 'Deshabilitado' : 'Habilitado');
             console.log('Botón formato cuadrado:', elements.btnSquareFormat.disabled ? 'Deshabilitado' : 'Habilitado');
             console.log('Botón virtual try-on:', elements.btnVirtualTryOn.disabled ? 'Deshabilitado' : 'Habilitado');
