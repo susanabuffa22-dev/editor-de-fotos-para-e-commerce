@@ -470,7 +470,9 @@ function showError(message, type) {
     const notificationDiv = document.createElement('div');
     notificationDiv.className = 'notification';
     
-    const svgIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + config.icon + '</svg>';
+    const svgIcon = '
+```' + config.icon + '```
+';
     
     notificationDiv.innerHTML = svgIcon + '<span>' + message + '</span>';
     
