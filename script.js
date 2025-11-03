@@ -58,6 +58,9 @@ const elements = {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Editor Multimodo Iniciado (Ultra Robusto)');
     
+    // ✅ OCULTAR MENSAJE DE API KEY AUTOMÁTICAMENTE
+    hideApiKeyNotice();
+    
     // Validar todos los elementos primero
     initializeElements();
     
@@ -293,6 +296,17 @@ function setupModeSelectorSafe() {
         console.log('✅ Modo selector listeners configurados');
     } catch (error) {
         console.error('❌ Error configurando modo selector:', error);
+    }
+}
+
+// ===========================
+// OCULTAR MENSAJE DE API KEY
+// ===========================
+function hideApiKeyNotice() {
+    const apiNotice = document.getElementById('apiNotice');
+    if (apiNotice) {
+        apiNotice.style.display = 'none';
+        console.log('✅ Mensaje de API Key ocultado - API configurada');
     }
 }
 
