@@ -453,15 +453,15 @@ function showError(message, type) {
     const typeConfig = {
         error: {
             background: '#DC3545',
-            icon: '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>'
+            icon: '<circle cx=\'12\' cy=\'12\' r=\'10\'/><line x1=\'15\' y1=\'9\' x2=\'9\' y2=\'15\'/><line x1=\'9\' y1=\'9\' x2=\'15\' y2=\'15\'/>'
         },
         success: {
             background: '#198754',
-            icon: '<polyline points="20,6 9,17 4,12"/>'
+            icon: '<polyline points=\'20,6 9,17 4,12\'/>'
         },
         info: {
             background: '#0DCAF0',
-            icon: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'
+            icon: '<circle cx=\'12\' cy=\'12\' r=\'10\'/><line x1=\'12\' y1=\'16\' x2=\'12\' y2=\'12\'/><line x1=\'12\' y1=\'8\' x2=\'12.01\' y2=\'8\'/>'
         }
     };
     
@@ -470,9 +470,70 @@ function showError(message, type) {
     const notificationDiv = document.createElement('div');
     notificationDiv.className = 'notification';
     
-    const svgIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width=\'2\'>' + config.icon + '</svg>';
+    // Crear SVG sin innerHTML
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svgElement = document.createElementNS(svgNS, 'svg');
+    svgElement.setAttribute('width', '20');
+    svgElement.setAttribute('height', '20');
+    svgElement.setAttribute('viewBox', '0 0 24 24');
+    svgElement.setAttribute('fill', 'none');
+    svgElement.setAttribute('stroke', 'currentColor');
+    svgElement.setAttribute('stroke-width', '2');
     
-    notificationDiv.innerHTML = svgIcon + '<span>' + message + '</span>';
+    // Crear elementos del SVG según el tipo
+    if (config.icon.includes('circle') && config.icon.includes('polyline')) {
+        const circle = document.createElementNS(svgNS, 'polyline');
+        circle.setAttribute('points', '20,6 9,17 4,12');
+        svgElement.appendChild(circle);
+    } else if (config.icon.includes('circle') && config.icon.includes('line')) {
+        const circle = document.createElementNS(svgNS, 'circle');
+        circle.setAttribute('cx', '12');
+        circle.setAttribute('cy', '12');
+        circle.setAttribute('r', '10');
+        svgElement.appendChild(circle);
+        
+        const line1 = document.createElementNS(svgNS, 'line');
+        line1.setAttribute('x1', '15');
+        line1.setAttribute('y1', '9');
+        line1.setAttribute('x2', '9');
+        line1.setAttribute('y2', '15');
+        svgElement.appendChild(line1);
+        
+        const line2 = document.createElementNS(svgNS, 'line');
+        line2.setAttribute('x1', '9');
+        line2.setAttribute('y1', '9');
+        line2.setAttribute('x2', '15');
+        line2.setAttribute('y2', '15');
+        svgElement.appendChild(line2);
+    } else if (config.icon.includes('line') && config.icon.includes('12.01')) {
+        const circle = document.createElementNS(svgNS, 'circle');
+        circle.setAttribute('cx', '12');
+        circle.setAttribute('cy', '12');
+        circle.setAttribute('r', '10');
+        svgElement.appendChild(circle);
+        
+        const line1 = document.createElementNS(svgNS, 'line');
+        line1.setAttribute('x1', '12');
+        line1.setAttribute('y1', '16');
+        line1.setAttribute('x2', '12');
+        line1.setAttribute('y2', '12');
+        svgElement.appendChild(line1);
+        
+        const line2 = document.createElementNS(svgNS, 'line');
+        line2.setAttribute('x1', '12');
+        line2.setAttribute('y1', '8');
+        line2.setAttribute('x2', '12.01');
+        line2.setAttribute('y2', '8');
+        svgElement.appendChild(line2);
+    }
+    
+    // Crear span para el mensaje
+    const messageSpan = document.createElement('span');
+    messageSpan.textContent = message;
+    
+    // Agregar elementos al div
+    notificationDiv.appendChild(svgElement);
+    notificationDiv.appendChild(messageSpan);
     
     Object.assign(notificationDiv.style, {
         position: 'fixed',
