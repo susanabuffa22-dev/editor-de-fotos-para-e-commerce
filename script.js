@@ -1,529 +1,310 @@
 // ===========================
-// EDITOR MULTIMODO: CATÁLOGO + INSTAGRAM REEL
-// Sistema inteligente de procesamiento según destino
+// EDITOR MULTIMODO CORREGIDO
 // ===========================
+// 🎯 Versión corregida para eliminar ghosting y conflictos de renderizado
 
-// Configuration
-const CONFIG = {
-    API_KEY: "AIzaSyBAuTlMG2kQWBIpaylzCUhGJopB2JcNh6I",
-    API_ENDPOINT: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent"
-};
+// Configuración
+const API_KEY = 'AIzaSyBAuTlMG2kQWBIpaylzCUhGJopB2JcNh6I';
+const API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${API_KEY}`;
 
-// Modes Configuration
-const MODES = {
-    CATALOG: {
+// Estados
+let currentMode = 'catalog';
+let base64ImageData = null;
+let processingQueue = []; // Cola para prevenir conflictos
+let isProcessing = false; // Flag para evitar procesamiento concurrente
+
+// Configuraciones por modo
+const modeConfigs = {
+    catalog: {
         name: 'Catálogo Web',
         width: 500,
         height: 500,
-        description: 'Productos e-commerce - Cuadrado 500x500px'
+        icon: '🛍️',
+        strategy: 'expansion' // Expandir verticales, centrar horizontales
     },
-    INSTAGRAM: {
+    instagram: {
         name: 'Instagram Reel',
         width: 1080,
         height: 1920,
-        description: 'Reels verticales - 1080x1920px'
+        icon: '📱',
+        strategy: 'cropping' // Recortar a vertical
     }
 };
 
-// Global state
-let base64ImageData = null;
-let base64GarmentData = null;
-let lastApiCall = null;
-let currentMode = 'CATALOG'; // CATALOG or INSTAGRAM
-
-// DOM Elements
+// Elementos DOM
 const elements = {
-    imageUpload: document.getElementById('imageUpload'),
-    garmentUpload: document.getElementById('garmentUpload'),
-    personPreview: document.getElementById('personPreview'),
-    garmentPreview: document.getElementById('garmentPreview'),
-    personImage: document.getElementById('personImage'),
-    garmentImage: document.getElementById('garmentImage'),
-    originalImage: document.getElementById('originalImage'),
-    editedImage: document.getElementById('editedImage'),
-    controls: document.getElementById('controls'),
-    garmentSection: document.getElementById('garmentSection'),
-    btnWhiteBg: document.getElementById('btn-white-bg'),
-    btnSquareFormat: document.getElementById('btn-square-format'),
-    btnSmile: document.getElementById('btn-smile'),
-    btnVirtualTryOn: document.getElementById('btn-virtual-try-on'),
+    fileInput: document.getElementById('image-upload'),
+    uploadArea: document.getElementById('upload-area'),
+    personImage: document.getElementById('person-image'),
+    personPreview: document.getElementById('person-preview'),
+    garmentSection: document.getElementById('garment-section'),
+    originalImage: document.getElementById('original-image'),
+    editedImage: document.getElementById('edited-image'),
     btnDownload: document.getElementById('btn-download'),
     btnRetry: document.getElementById('btn-retry'),
-    // NEW MODE SELECTOR
-    modeSelector: document.getElementById('modeSelector'),
-    catalogMode: document.getElementById('catalogMode'),
-    instagramMode: document.getElementById('instagramMode'),
-    currentModeDisplay: document.getElementById('currentModeDisplay'),
+    btnVirtualTryOn: document.getElementById('btn-virtual-tryon'),
+    btnWhiteBackground: document.getElementById('btn-white-background'),
+    btnSmile: document.getElementById('btn-smile'),
+    catalogMode: document.getElementById('catalog-mode'),
+    instagramMode: document.getElementById('instagram-mode'),
+    currentModeDisplay: document.getElementById('current-mode-display'),
     loader: document.getElementById('loader'),
-    apiNotice: document.getElementById('apiNotice')
+    errorMessage: document.getElementById('error-message'),
+    imageUploadSection: document.getElementById('image-upload-section'),
+    modeSelectorSection: document.getElementById('mode-selector-section'),
+    toolsSection: document.getElementById('tools-section'),
+    previewSection: document.getElementById('preview-section')
 };
 
 // ===========================
-// INITIALIZATION
+// INICIALIZACIÓN
 // ===========================
-
 document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
+    console.log('🚀 Editor Multimodo Iniciado');
     setupEventListeners();
-    console.log('🚀 Editor MULTIMODO: Catálogo + Instagram Reel');
+    setupModeSelector();
+    initializeMode();
 });
 
-function initializeApp() {
-    console.log('🚀 Editor MULTIMODO inicializado');
-    console.log('✅ Modo Catálogo: 500x500px cuadrado');
-    console.log('✅ Modo Instagram: 1080x1920px vertical');
-    console.log('✅ Expansión inteligente en modo catálogo');
-    console.log('✅ Recorte inteligente en ambos modos');
+// ===========================
+// MODO SELECTOR
+// ===========================
+function setupModeSelector() {
+    // Eventos para botones de modo
+    elements.catalogMode.addEventListener('click', () => switchMode('catalog'));
+    elements.instagramMode.addEventListener('click', () => switchMode('instagram'));
     
-    updateModeDisplay();
+    console.log('✅ Modo selector configurado');
 }
 
+function switchMode(mode) {
+    if (currentMode === mode) return; // No cambiar si ya está activo
+    
+    // Cancelar operaciones en curso
+    if (isProcessing) {
+        showError('Espere a que termine la operación actual antes de cambiar el modo');
+        return;
+    }
+    
+    currentMode = mode;
+    updateModeDisplay();
+    
+    // Limpiar preview si hay imagen cargada
+    if (base64ImageData) {
+        elements.editedImage.innerHTML = '<p class="placeholder">Procesar imagen en modo ' + modeConfigs[mode].name + '</p>';
+    }
+    
+    console.log('🔄 Modo cambiado a: ' + modeConfigs[mode].name);
+}
+
+function initializeMode() {
+    // Configurar modo por defecto
+    switchMode('catalog');
+}
+
+function updateModeDisplay() {
+    const config = modeConfigs[currentMode];
+    elements.currentModeDisplay.innerHTML = `
+        <span class="mode-icon">${config.icon}</span>
+        <div class="mode-info">
+            <div class="mode-name">${config.name}</div>
+            <div class="mode-dimensions">${config.width}×${config.height}px</div>
+        </div>
+    `;
+    
+    // Actualizar apariencia de botones
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    if (currentMode === 'catalog') {
+        elements.catalogMode.classList.add('active');
+    } else {
+        elements.instagramMode.classList.add('active');
+    }
+}
+
+// ===========================
+// GESTORES DE EVENTOS
+//===========================
 function setupEventListeners() {
-    // Image uploads
-    elements.imageUpload.addEventListener('change', handlePersonImageUpload);
-    elements.garmentUpload.addEventListener('change', handleGarmentImageUpload);
+    // Upload handlers
+    elements.fileInput.addEventListener('change', handleImageUpload);
+    elements.uploadArea.addEventListener('dragover', handleDragOver);
+    elements.uploadArea.addEventListener('dragleave', handleDragLeave);
+    elements.uploadArea.addEventListener('drop', handleDrop);
     
-    // Mode selector
-    elements.catalogMode.addEventListener('click', () => setMode('CATALOG'));
-    elements.instagramMode.addEventListener('click', () => setMode('INSTAGRAM'));
-    
-    // Editing buttons
-    elements.btnWhiteBg.addEventListener('click', function() {
-        smartProcessTask('Cambiar el fondo a blanco profesional, mantener a la persona intacta');
-    });
-    elements.btnSquareFormat.addEventListener('click', function() {
-        smartProcessTask('Cambiar formato según destino, ajustar composición manteniendo la persona centrada');
-    });
-    elements.btnSmile.addEventListener('click', function() {
-        smartProcessTask('Mejorar la expresión de la persona para que se vea más sonriente y amigable');
-    });
-    elements.btnVirtualTryOn.addEventListener('click', smartVirtualTryOn);
-    
-    // Action buttons
+    // Tool handlers
+    elements.btnWhiteBackground.addEventListener('click', () => processInMode('white_background'));
+    elements.btnSmile.addEventListener('click', () => processInMode('smile_enhancement'));
+    elements.btnVirtualTryOn.addEventListener('click', () => processInMode('virtual_tryon'));
     elements.btnDownload.addEventListener('click', downloadImage);
-    elements.btnRetry.addEventListener('click', retryLastTask);
+    elements.btnRetry.addEventListener('click', resetEditor);
     
     console.log('✅ Event listeners configurados');
 }
 
 // ===========================
-// MODE MANAGEMENT
+// SISTEMA DE COLA PROCESAMIENTO
 // ===========================
-
-function setMode(mode) {
-    currentMode = mode;
-    updateModeDisplay();
-    
-    const modeConfig = MODES[mode];
-    console.log('🎯 Modo cambiado a: ' + modeConfig.name);
-    console.log('🎯 Dimensiones: ' + modeConfig.width + 'x' + modeConfig.height + 'px');
-    console.log('🎯 Descripción: ' + modeConfig.description);
-    
-    showError('Modo cambiado a: ' + modeConfig.name, 'info');
-}
-
-function updateModeDisplay() {
-    const modeConfig = MODES[currentMode];
-    
-    // Update display text
-    elements.currentModeDisplay.textContent = `${modeConfig.name} (${modeConfig.width}x${modeConfig.height})`;
-    
-    // Update button states
-    elements.catalogMode.classList.toggle('active', currentMode === 'CATALOG');
-    elements.instagramMode.classList.toggle('active', currentMode === 'INSTAGRAM');
-}
-
-// ===========================
-// SMART PROCESSING FUNCTIONS
-// ===========================
-
-function smartProcessTask(promptText) {
+async function processInMode(processType) {
     if (!base64ImageData) {
-        showError('Primero debes cargar una imagen de persona');
+        showError('Por favor, sube una imagen primero');
         return;
     }
     
-    lastApiCall = { type: 'standard', prompt: promptText };
+    if (isProcessing) {
+        showError('Espere a que termine la operación actual');
+        return;
+    }
     
-    const modeConfig = MODES[currentMode];
+    // Agregar a la cola y procesar
+    const task = { type: processType, timestamp: Date.now() };
+    processingQueue.push(task);
     
-    console.log('🎯 Iniciando procesamiento INTELIGENTE');
-    console.log('🎯 Modo: ' + modeConfig.name);
-    console.log('🎯 Prompt: ' + promptText);
-    
-    showLoader(true);
-    
-    // Analyze image orientation to determine strategy
-    analyzeImageOrientation(base64ImageData)
-        .then(orientation => {
-            console.log('📊 Orientación detectada: ' + orientation);
-            return smartProcess(orientation, promptText, base64ImageData);
-        })
-        .then(finalResultUrl => {
-            if (finalResultUrl) {
-                elements.editedImage.innerHTML = '<img src="' + finalResultUrl + '" alt="Imagen procesada">';
-                
-                elements.btnDownload.disabled = false;
-                elements.btnRetry.disabled = false;
-                
-                console.log('✅ Procesamiento inteligente completado');
-                showError(`✅ Imagen procesada en modo ${modeConfig.name}`, 'success');
-            } else {
-                showError('Error en el procesamiento inteligente');
-            }
-        })
-        .catch(error => {
-            console.error('❌ Error en procesamiento inteligente:', error);
-            showError('Error: ' + error.message);
-        })
-        .finally(() => {
-            showLoader(false);
-        });
+    await processQueue();
 }
 
-function smartVirtualTryOn() {
-    if (!base64ImageData) {
-        showError('Primero debes cargar una imagen de persona');
+async function processQueue() {
+    if (isProcessing || processingQueue.length === 0) {
         return;
     }
     
-    if (!base64GarmentData) {
-        showError('Primero debes cargar una imagen de prenda');
-        return;
-    }
+    isProcessing = true;
+    const task = processingQueue.shift();
     
-    lastApiCall = { type: 'virtual-try-on', prompt: 'virtual try-on' };
-    
-    const modeConfig = MODES[currentMode];
-    
-    console.log('🎯 Iniciando Virtual Try-On INTELIGENTE');
-    console.log('🎯 Modo: ' + modeConfig.name);
-    
-    showLoader(true);
-    
-    // Analyze image orientation to determine strategy
-    analyzeImageOrientation(base64ImageData)
-        .then(orientation => {
-            console.log('📊 Orientación detectada: ' + orientation);
-            return smartVirtualTryOnProcess(orientation);
-        })
-        .then(finalResultUrl => {
-            if (finalResultUrl) {
-                elements.editedImage.innerHTML = '<img src="' + finalResultUrl + '" alt="Virtual try-on procesado">';
-                
-                elements.btnDownload.disabled = false;
-                elements.btnRetry.disabled = false;
-                
-                console.log('✅ Virtual try-on inteligente completado');
-                showError(`✅ Virtual try-on en modo ${modeConfig.name}`, 'success');
-            } else {
-                showError('Error en el virtual try-on inteligente');
-            }
-        })
-        .catch(error => {
-            console.error('❌ Error en virtual try-on inteligente:', error);
-            showError('Error: ' + error.message);
-        })
-        .finally(() => {
-            showLoader(false);
-        });
-}
-
-// ===========================
-// INTELLIGENT PROCESSING LOGIC
-// ===========================
-
-async function analyzeImageOrientation(imageBase64) {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.src = 'data:image/jpeg;base64,' + imageBase64;
+    try {
+        console.log('🎯 Procesando: ' + task.type + ' en modo ' + modeConfigs[currentMode].name);
         
-        img.onload = function() {
-            const width = img.width;
-            const height = img.height;
-            const ratio = width / height;
+        // Obtener configuración del modo actual
+        const modeConfig = modeConfigs[currentMode];
+        
+        // Crear canvas limpio para procesamiento
+        const processedData = await processImageWithQueue(base64ImageData, task.type, modeConfig);
+        
+        if (processedData) {
+            // Mostrar resultado en preview
+            elements.editedImage.innerHTML = '<img src="' + processedData + '" alt="Imagen procesada">';
+            elements.btnDownload.disabled = false;
+            elements.btnRetry.disabled = false;
             
-            let orientation;
-            if (ratio > 1.2) {
-                orientation = 'horizontal';
-            } else if (ratio < 0.8) {
-                orientation = 'vertical';
+            showError(`✅ Procesamiento completado en modo ${modeConfig.name}`, 'success');
+            console.log('✅ Procesamiento completado');
+        } else {
+            showError('Error en el procesamiento');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error en procesamiento:', error);
+        showError('Error: ' + error.message);
+    } finally {
+        isProcessing = false;
+        
+        // Procesar siguiente tarea en la cola
+        if (processingQueue.length > 0) {
+            setTimeout(processQueue, 100);
+        }
+    }
+}
+
+// ===========================
+// PROCESAMIENTO DE IMAGEN CORREGIDO
+// ===========================
+async function processImageWithQueue(imageBase64, processType, modeConfig) {
+    return new Promise(async (resolve) => {
+        try {
+            // 1. Analizar orientación
+            const orientation = await analyzeImageOrientation(imageBase64);
+            console.log('📊 Orientación: ' + orientation);
+            
+            // 2. Aplicar estrategia según modo
+            let processedImage;
+            
+            if (modeConfig.strategy === 'expansion') {
+                // MODO CATÁLOGO: Expandir verticales, centrar horizontales
+                processedImage = await processCatalogMode(imageBase64, orientation, processType);
             } else {
-                orientation = 'square';
+                // MODO INSTAGRAM: Recortar a vertical
+                processedImage = await processInstagramMode(imageBase64, orientation, processType);
             }
             
-            resolve(orientation);
-        };
-        
-        img.onerror = function() {
-            // Default to square if can't determine
-            resolve('square');
-        };
+            // 3. Llamar API si es necesario
+            if (processType !== 'dimensions_only') {
+                processedImage = await callImageAPI(processedImage, processType, modeConfig);
+            }
+            
+            resolve(processedImage);
+            
+        } catch (error) {
+            console.error('❌ Error en procesamiento con cola:', error);
+            resolve(null);
+        }
     });
 }
 
-async function smartProcess(orientation, promptText, imageBase64) {
-    const modeConfig = MODES[currentMode];
-    
-    try {
-        if (currentMode === 'CATALOG') {
-            return await catalogProcessing(orientation, promptText, imageBase64);
-        } else {
-            return await instagramProcessing(orientation, promptText, imageBase64);
-        }
-    } catch (error) {
-        console.error('Error en procesamiento inteligente:', error);
-        throw error;
-    }
-}
-
-async function catalogProcessing(orientation, promptText, imageBase64) {
-    const modeConfig = MODES.CATALOG;
-    
-    console.log('🛍️ Procesamiento CATÁLOGO (500x500px)');
-    
-    if (orientation === 'vertical') {
-        // MODO CATÁLOGO + IMAGEN VERTICAL = EXPANSIÓN INTELIGENTE
-        console.log('🔧 Estrategia: EXPANSIÓN - Rellenar espacios faltantes');
-        
-        // IA expande la imagen para crear contenido en los espacios faltantes
-        const expandedPrompt = promptText + ' + EXPANSIÓN INTELIGENTE: Rellena los espacios faltantes para completar formato cuadrado 500x500px, manteniendo continuidad natural con la imagen original.';
-        
-        return await processWithAI(expandedPrompt, imageBase64)
-            .then(aiResult => {
-                // Asegurar dimensiones exactas después de expansión
-                return smartCropToDimensions(aiResult, modeConfig.width, modeConfig.height);
-            });
-            
-    } else if (orientation === 'square') {
-        // MODO CATÁLOGO + IMAGEN CUADRADA = MANTENER + AJUSTAR
-        console.log('🔧 Estrategia: MANTENER - Imagen ya está en formato correcto');
-        
-        const adjustedPrompt = promptText + ' + FORMATO: Mantener proporciones cuadradas para catálogo e-commerce 500x500px.';
-        
-        return await processWithAI(adjustedPrompt, imageBase64)
-            .then(aiResult => {
-                return smartCropToDimensions(aiResult, modeConfig.width, modeConfig.height);
-            });
-            
-    } else {
-        // MODO CATÁLOGO + IMAGEN HORIZONTAL = RECORTE INTELIGENTE
-        console.log('🔧 Estrategia: RECORTE - Centrar y recortar para cuadrado');
-        
-        const croppedPrompt = promptText + ' + COMPOSICIÓN: Ajustar para formato cuadrado 500x500px, manteniendo la persona centrada.';
-        
-        return await processWithAI(croppedPrompt, imageBase64)
-            .then(aiResult => {
-                return smartCropToDimensions(aiResult, modeConfig.width, modeConfig.height);
-            });
-    }
-}
-
-async function instagramProcessing(orientation, promptText, imageBase64) {
-    const modeConfig = MODES.INSTAGRAM;
-    
-    console.log('📱 Procesamiento INSTAGRAM REEL (1080x1920px)');
-    
-    if (orientation === 'vertical') {
-        // MODO INSTAGRAM + IMAGEN VERTICAL = MANTENER + AJUSTAR
-        console.log('🔧 Estrategia: MANTENER - Imagen ya tiene orientación correcta');
-        
-        const adjustedPrompt = promptText + ' + FORMATO: Optimizar para Instagram Reel vertical 1080x1920px, mantener calidad y centrado.';
-        
-        return await processWithAI(adjustedPrompt, imageBase64)
-            .then(aiResult => {
-                return smartCropToDimensions(aiResult, modeConfig.width, modeConfig.height);
-            });
-            
-    } else if (orientation === 'square') {
-        // MODO INSTAGRAM + IMAGEN CUADRADA = RECORTE PARA VERTICAL
-        console.log('🔧 Estrategia: RECORTE - Convertir cuadrado a vertical');
-        
-        const verticalPrompt = promptText + ' + FORMATO: Convertir a vertical 1080x1920px para Instagram Reel, mantener contenido principal centrado.';
-        
-        return await processWithAI(verticalPrompt, imageBase64)
-            .then(aiResult => {
-                return smartCropToDimensions(aiResult, modeConfig.width, modeConfig.height);
-            });
-            
-    } else {
-        // MODO INSTAGRAM + IMAGEN HORIZONTAL = RECORTE PARA VERTICAL
-        console.log('🔧 Estrategia: RECORTE - Convertir horizontal a vertical');
-        
-        const verticalPrompt = promptText + ' + FORMATO: Convertir a vertical 1080x1920px para Instagram Reel, preservar elemento principal.';
-        
-        return await processWithAI(verticalPrompt, imageBase64)
-            .then(aiResult => {
-                return smartCropToDimensions(aiResult, modeConfig.width, modeConfig.height);
-            });
-    }
-}
-
-async function smartVirtualTryOnProcess(orientation) {
-    const modeConfig = MODES[currentMode];
-    
-    console.log('👕 Virtual Try-On Inteligente - Modo: ' + modeConfig.name);
-    
-    const virtualPrompt = 'Combina esta prenda con la persona de manera realista, la prenda debe verse natural como si la persona realmente la estuviera usando. Virtual try-on profesional.';
-    
-    return await processVirtualTryOnWithAI(virtualPrompt)
-        .then(aiResult => {
-            return smartCropToDimensions(aiResult, modeConfig.width, modeConfig.height);
-        });
-}
-
 // ===========================
-// AI PROCESSING FUNCTIONS
+// LÓGICA POR MODO
 // ===========================
-
-async function processWithAI(promptText, imageBase64) {
-    const payload = {
-        contents: [{
-            parts: [
-                { text: promptText },
-                {
-                    inline_data: {
-                        mime_type: "image/jpeg",
-                        data: imageBase64
-                    }
-                }
-            ]
-        }],
-        generation_config: {
-            temperature: 0.1,
-            max_output_tokens: 8192
-        }
-    };
+async function processCatalogMode(imageBase64, orientation, processType) {
+    const modeConfig = modeConfigs.catalog;
     
-    return await callApiAndExtractImage(payload);
-}
-
-async function processVirtualTryOnWithAI(promptText) {
-    const payload = {
-        contents: [{
-            parts: [
-                { text: promptText },
-                {
-                    inline_data: {
-                        mime_type: "image/jpeg",
-                        data: base64ImageData
-                    }
-                },
-                { text: ' y ' },
-                {
-                    inline_data: {
-                        mime_type: "image/jpeg",
-                        data: base64GarmentData
-                    }
-                }
-            ]
-        }],
-        generation_config: {
-            temperature: 0.1,
-            max_output_tokens: 8192
-        }
-    };
-    
-    return await callApiAndExtractImage(payload);
-}
-
-async function callApiAndExtractImage(payload) {
-    try {
-        console.log('📡 Enviando a IA...');
-        
-        const response = await fetchWithBackoff(CONFIG.API_ENDPOINT, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-goog-api-key': CONFIG.API_KEY,
-            },
-            body: JSON.stringify(payload)
-        });
-        
-        if (!response.ok) {
-            throw new Error('Error ' + response.status + ': ' + response.statusText);
-        }
-        
-        const data = await response.json();
-        console.log('📨 Respuesta de IA recibida');
-        
-        const imageBase64 = extractImageFromResponse(data);
-        
-        if (!imageBase64) {
-            throw new Error('La IA no devolvió una imagen válida');
-        }
-        
-        console.log('✅ Imagen extraída de respuesta de IA');
-        return imageBase64;
-        
-    } catch (error) {
-        console.error('❌ Error en API:', error);
-        throw error;
-    }
-}
-
-async function fetchWithBackoff(url, options, maxRetries) {
-    if (!maxRetries) {
-        maxRetries = 3;
-    }
-    
-    for (let i = 0; i <= maxRetries; i++) {
-        try {
-            const response = await fetch(url, options);
-            return response;
-        } catch (error) {
-            if (i === maxRetries) throw error;
+    switch (orientation) {
+        case 'vertical':
+            // IMAGEN VERTICAL: Usar IA para expandir/fill
+            console.log('📏 Procesando imagen vertical - expandir con IA');
+            return await processWithAIExpansion(imageBase64, processType, modeConfig);
             
-            const delay = Math.pow(2, i) * 1000;
-            console.log('Reintentando en ' + delay + 'ms... (' + (i + 1) + '/' + maxRetries + ')');
-            await new Promise(function(resolve) {
-                setTimeout(resolve, delay);
-            });
-        }
+        case 'square':
+            // IMAGEN CUADRADA: Mantener como está
+            console.log('📐 Procesando imagen cuadrada - mantener');
+            return imageBase64;
+            
+        case 'horizontal':
+            // IMAGEN HORIZONTAL: Centrar/cortar a cuadrado
+            console.log('📏 Procesando imagen horizontal - centrar');
+            return await smartCropToDimensions(imageBase64, modeConfig.width, modeConfig.height);
+            
+        default:
+            return imageBase64;
+    }
+}
+
+async function processInstagramMode(imageBase64, orientation, processType) {
+    const modeConfig = modeConfigs.instagram;
+    
+    switch (orientation) {
+        case 'vertical':
+            // IMAGEN VERTICAL: Mantener como está
+            console.log('📏 Procesando imagen vertical - mantener');
+            return imageBase64;
+            
+        case 'square':
+            // IMAGEN CUADRADA: Recortar a vertical (centro)
+            console.log('📐 Procesando imagen cuadrada - recortar a vertical');
+            return await cropSquareToVertical(imageBase64, modeConfig.width, modeConfig.height);
+            
+        case 'horizontal':
+            // IMAGEN HORIZONTAL: Recortar a vertical (centro)
+            console.log('📏 Procesando imagen horizontal - recortar a vertical');
+            return await cropToVertical(imageBase64, modeConfig.width, modeConfig.height);
+            
+        default:
+            return imageBase64;
     }
 }
 
 // ===========================
-// IMAGE EXTRACTION
+// FUNCIONES DE PROCESAMIENTO ESPECÍFICAS
 // ===========================
-
-function extractImageFromResponse(data) {
-    try {
-        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-            const parts = data.candidates[0].content.parts;
-            
-            if (parts && Array.isArray(parts)) {
-                for (let i = 0; i < parts.length; i++) {
-                    const part = parts[i];
-                    
-                    // Buscar en inline_data
-                    if (part.inline_data && part.inline_data.data) {
-                        return part.inline_data.data;
-                    }
-                    
-                    // Buscar en texto (data:image)
-                    if (part.text) {
-                        const match = part.text.match(/data:image\/[a-z]+;base64,([a-zA-Z0-9+\/=]+)/);
-                        if (match) {
-                            return match[1];
-                        }
-                    }
-                }
-            }
-        }
-        
-        return null;
-    } catch (error) {
-        console.error('Error extrayendo imagen:', error);
-        return null;
-    }
+async function processWithAIExpansion(imageBase64, processType, modeConfig) {
+    // Para imágenes verticales en modo catálogo
+    // La IA will expandir/fill los espacios faltantes
+    const prompt = `Edit this image to expand and fill any missing spaces to create a complete ${modeConfig.width}x${modeConfig.height}px square format. Continue the original image naturally and seamlessly where spaces are needed. Maintain the subject and style of the original image.`;
+    
+    return await callImageAPI(imageBase64, prompt, modeConfig);
 }
 
-// ===========================
-// SMART DIMENSIONAL PROCESSING
-// ===========================
-
-function smartCropToDimensions(imageBase64, targetWidth, targetHeight) {
+async function smartCropToDimensions(imageBase64, targetWidth, targetHeight) {
     return new Promise((resolve) => {
         const img = new Image();
         img.src = 'data:image/jpeg;base64,' + imageBase64;
@@ -532,9 +313,15 @@ function smartCropToDimensions(imageBase64, targetWidth, targetHeight) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
+            // LIMPIAR CANVAS ANTES DE USAR
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
             // Set target dimensions
             canvas.width = targetWidth;
             canvas.height = targetHeight;
+            
+            // LIMPIAR NUEVAMENTE DESPUÉS DE CAMBIAR DIMENSIONES
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             const imgWidth = img.width;
             const imgHeight = img.height;
@@ -555,6 +342,10 @@ function smartCropToDimensions(imageBase64, targetWidth, targetHeight) {
             ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
             
             const resultUrl = canvas.toDataURL('image/jpeg', 0.9);
+            
+            // LIMPIAR RECURSOS
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
             console.log('✅ Procesamiento completado: ' + targetWidth + 'x' + targetHeight + 'px');
             resolve(resultUrl);
         };
@@ -566,11 +357,228 @@ function smartCropToDimensions(imageBase64, targetWidth, targetHeight) {
     });
 }
 
-// ===========================
-// IMAGE UPLOAD HANDLERS
-// ===========================
+async function cropSquareToVertical(imageBase64, targetWidth, targetHeight) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.src = 'data:image/jpeg;base64,' + imageBase64;
+        
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // LIMPIAR CANVAS
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            
+            // LIMPIAR NUEVAMENTE
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Tomar la parte central de la imagen cuadrada
+            const sourceSize = Math.min(img.width, img.height);
+            const sourceX = (img.width - sourceSize) / 2;
+            const sourceY = (img.height - sourceSize) / 2;
+            
+            // Escalar y centrar en formato vertical
+            const scaleX = targetWidth / sourceSize;
+            const scaleY = targetHeight / sourceSize;
+            const scale = Math.max(scaleX, scaleY);
+            
+            const scaledWidth = sourceSize * scale;
+            const scaledHeight = sourceSize * scale;
+            
+            const offsetX = (targetWidth - scaledWidth) / 2;
+            const offsetY = (targetHeight - scaledHeight) / 2;
+            
+            // Draw the cropped image
+            ctx.drawImage(img, sourceX, sourceY, sourceSize, sourceSize, offsetX, offsetY, scaledWidth, scaledHeight);
+            
+            const resultUrl = canvas.toDataURL('image/jpeg', 0.9);
+            
+            // LIMPIAR RECURSOS
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            console.log('✅ Recorte cuadrado a vertical completado');
+            resolve(resultUrl);
+        };
+        
+        img.onerror = function() {
+            console.error('❌ Error en recorte cuadrado a vertical');
+            resolve(null);
+        };
+    });
+}
 
-async function handlePersonImageUpload(event) {
+async function cropToVertical(imageBase64, targetWidth, targetHeight) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.src = 'data:image/jpeg;base64,' + imageBase64;
+        
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // LIMPIAR CANVAS
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            
+            // LIMPIAR NUEVAMENTE
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Tomar la parte central de la imagen horizontal
+            const sourceHeight = img.height;
+            const sourceWidth = Math.floor(sourceHeight * (targetWidth / targetHeight));
+            const sourceX = Math.floor((img.width - sourceWidth) / 2);
+            const sourceY = 0;
+            
+            // Escalar para llenar completamente el canvas vertical
+            const scaleX = targetWidth / sourceWidth;
+            const scaleY = targetHeight / sourceHeight;
+            const scale = Math.max(scaleX, scaleY);
+            
+            const scaledWidth = sourceWidth * scale;
+            const scaledHeight = sourceHeight * scale;
+            
+            const offsetX = (targetWidth - scaledWidth) / 2;
+            const offsetY = (targetHeight - scaledHeight) / 2;
+            
+            // Draw the cropped image
+            ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, offsetX, offsetY, scaledWidth, scaledHeight);
+            
+            const resultUrl = canvas.toDataURL('image/jpeg', 0.9);
+            
+            // LIMPIAR RECURSOS
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            console.log('✅ Recorte a vertical completado');
+            resolve(resultUrl);
+        };
+        
+        img.onerror = function() {
+            console.error('❌ Error en recorte a vertical');
+            resolve(null);
+        };
+    });
+}
+
+// ===========================
+// ANÁLISIS DE ORIENTACIÓN
+// ===========================
+async function analyzeImageOrientation(imageBase64) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.src = 'data:image/jpeg;base64,' + imageBase64;
+        
+        img.onload = function() {
+            const width = img.width;
+            const height = img.height;
+            const ratio = width / height;
+            
+            let orientation;
+            if (ratio > 1.2) {
+                orientation = 'horizontal';
+            } else if (ratio < 0.8) {
+                orientation = 'vertical';
+            } else {
+                orientation = 'square';
+            }
+            
+            console.log('📊 Análisis - Ancho: ' + width + ', Alto: ' + height + ', Ratio: ' + ratio.toFixed(2) + ', Orientación: ' + orientation);
+            resolve(orientation);
+        };
+        
+        img.onerror = function() {
+            console.error('❌ Error analizando orientación');
+            resolve('square'); // Fallback
+        };
+    });
+}
+
+// ===========================
+// API DE IMAGEN IA
+// ===========================
+async function callImageAPI(imageBase64, processType, modeConfig) {
+    try {
+        // Determinar prompt basado en el tipo de procesamiento
+        let prompt;
+        switch (processType) {
+            case 'white_background':
+                prompt = 'Remove the background and replace it with a pure white background. Keep the main subject intact.';
+                break;
+            case 'smile_enhancement':
+                prompt = 'Gently enhance the smile and facial expression to look more natural and attractive. Keep the overall appearance realistic.';
+                break;
+            case 'virtual_tryon':
+                prompt = 'Apply virtual try-on effects that look natural and professional. Enhance the overall appearance while maintaining realism.';
+                break;
+            default:
+                prompt = 'Enhance this image to make it more professional and appealing for e-commerce use.';
+        }
+        
+        const requestBody = {
+            contents: [{
+                parts: [
+                    {
+                        text: prompt
+                    },
+                    {
+                        inline_data: {
+                            mime_type: "image/jpeg",
+                            data: imageBase64
+                        }
+                    }
+                ]
+            }],
+            generationConfig: {
+                temperature: 0.4,
+                topK: 1,
+                topP: 1,
+                maxOutputTokens: 2048,
+            }
+        };
+        
+        console.log('🤖 Llamando a API de imagen...');
+        
+        const response = await fetch(API_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts) {
+            const parts = result.candidates[0].content.parts;
+            
+            for (let part of parts) {
+                if (part.inline_data && part.inline_data.data) {
+                    console.log('✅ Imagen generada exitosamente');
+                    return 'data:image/jpeg;base64,' + part.inline_data.data;
+                }
+            }
+        }
+        
+        throw new Error('No se pudo extraer imagen de la respuesta');
+        
+    } catch (error) {
+        console.error('❌ Error llamando API:', error);
+        throw error;
+    }
+}
+
+// ===========================
+// MANEJO DE UPLOAD
+// ===========================
+async function handleImageUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
     
@@ -582,6 +590,12 @@ async function handlePersonImageUpload(event) {
         
         if (file.size > 10 * 1024 * 1024) {
             showError('La imagen es demasiado grande. Máximo 10MB.');
+            return;
+        }
+        
+        // Cancelar operaciones en curso
+        if (isProcessing) {
+            showError('Espere a que termine la operación actual');
             return;
         }
         
@@ -592,11 +606,12 @@ async function handlePersonImageUpload(event) {
         elements.personImage.src = dataUrl;
         elements.personPreview.style.display = 'block';
         elements.originalImage.innerHTML = '<img src="' + dataUrl + '" alt="Imagen original">';
+        elements.editedImage.innerHTML = '<p class="placeholder">Selecciona una herramienta para procesar en modo ' + modeConfigs[currentMode].name + '</p>';
         
         enableControls();
         elements.garmentSection.style.display = 'flex';
         
-        console.log('✅ Imagen de persona cargada exitosamente');
+        console.log('✅ Imagen cargada exitosamente');
         
     } catch (error) {
         console.error('❌ Error al cargar imagen:', error);
@@ -604,151 +619,129 @@ async function handlePersonImageUpload(event) {
     }
 }
 
-async function handleGarmentImageUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+function handleDragOver(event) {
+    event.preventDefault();
+    elements.uploadArea.classList.add('drag-over');
+}
+
+function handleDragLeave(event) {
+    event.preventDefault();
+    elements.uploadArea.classList.remove('drag-over');
+}
+
+function handleDrop(event) {
+    event.preventDefault();
+    elements.uploadArea.classList.remove('drag-over');
     
-    try {
-        if (!file.type.startsWith('image/')) {
-            showError('Por favor, selecciona una imagen válida');
-            return;
-        }
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+        const file = files[0];
+        const input = elements.fileInput;
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
         
-        if (file.size > 10 * 1024 * 1024) {
-            showError('La imagen es demasiado grande. Máximo 10MB.');
-            return;
-        }
-        
-        const base64 = await fileToBase64(file);
-        base64GarmentData = base64;
-        
-        const dataUrl = 'data:' + file.type + ';base64,' + base64;
-        elements.garmentImage.src = dataUrl;
-        elements.garmentPreview.style.display = 'block';
-        
-        console.log('✅ Imagen de prenda cargada exitosamente');
-        
-    } catch (error) {
-        console.error('❌ Error al cargar prenda:', error);
-        showError('Error al cargar la imagen de la prenda');
+        handleImageUpload({ target: { files: dt.files } });
     }
 }
 
-// ===========================
-// ACTION FUNCTIONS
-// ===========================
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const result = reader.result;
+            const base64 = result.split(',')[1];
+            resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
 
-function downloadImage() {
-    const img = elements.editedImage.querySelector('img');
-    if (!img) return;
+function enableControls() {
+    elements.btnWhiteBackground.disabled = false;
+    elements.btnSmile.disabled = false;
+    elements.btnVirtualTryOn.disabled = false;
+}
+
+function disableControls() {
+    elements.btnWhiteBackground.disabled = true;
+    elements.btnSmile.disabled = true;
+    elements.btnVirtualTryOn.disabled = true;
+    elements.btnDownload.disabled = true;
+    elements.btnRetry.disabled = true;
+}
+
+function resetEditor() {
+    // Cancelar operaciones en curso
+    processingQueue = [];
+    isProcessing = false;
     
+    elements.fileInput.value = '';
+    elements.personImage.src = '';
+    elements.personPreview.style.display = 'none';
+    elements.garmentSection.style.display = 'none';
+    elements.originalImage.innerHTML = '<p class="placeholder">Selecciona una imagen para comenzar</p>';
+    elements.editedImage.innerHTML = '<p class="placeholder">Procesar imagen en modo ' + modeConfigs[currentMode].name + '</p>';
+    
+    base64ImageData = null;
+    disableControls();
+    
+    console.log('🔄 Editor reiniciado');
+}
+
+async function downloadImage() {
     try {
-        const modeConfig = MODES[currentMode];
-        const a = document.createElement('a');
-        a.href = img.src;
-        a.download = `imagen-${currentMode.toLowerCase()}-${Date.now()}.jpg`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        const editedImg = elements.editedImage.querySelector('img');
+        if (!editedImg) {
+            showError('No hay imagen para descargar');
+            return;
+        }
         
-        console.log('✅ Imagen descargada en modo: ' + modeConfig.name);
-        showError('Imagen descargada exitosamente', 'success');
+        // Crear link de descarga
+        const link = document.createElement('a');
+        link.download = `imagen_${modeConfigs[currentMode].name.toLowerCase().replace(' ', '_')}_${Date.now()}.jpg`;
+        link.href = editedImg.src;
+        
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        console.log('💾 Imagen descargada');
         
     } catch (error) {
-        console.error('Error descargando imagen:', error);
+        console.error('❌ Error descargando imagen:', error);
         showError('Error al descargar la imagen');
-    }
-}
-
-function retryLastTask() {
-    if (!lastApiCall) {
-        showError('No hay una tarea previa para reintentar');
-        return;
-    }
-    
-    console.log('🔄 Reintentando última tarea:', lastApiCall);
-    
-    if (lastApiCall.type === 'standard') {
-        smartProcessTask(lastApiCall.prompt);
-    } else if (lastApiCall.type === 'virtual-try-on') {
-        smartVirtualTryOn();
     }
 }
 
 // ===========================
 // UI HELPERS
 // ===========================
-
-function enableControls() {
-    elements.controls.disabled = false;
-}
-
 function showLoader(show) {
-    elements.loader.style.display = show ? 'flex' : 'none';
+    if (show) {
+        elements.loader.style.display = 'flex';
+    } else {
+        elements.loader.style.display = 'none';
+    }
 }
 
-function showError(message, type) {
-    if (!type) {
-        type = 'error';
+function showError(message, type = 'error') {
+    elements.errorMessage.textContent = message;
+    elements.errorMessage.className = type === 'success' ? 'success' : 'error';
+    elements.errorMessage.style.display = 'block';
+    
+    // Auto-hide after 5 seconds for success messages
+    if (type === 'success') {
+        setTimeout(() => {
+            elements.errorMessage.style.display = 'none';
+        }, 5000);
     }
     
-    const typeConfig = {
-        error: {
-            background: '#DC3545'
-        },
-        success: {
-            background: '#198754'
-        },
-        info: {
-            background: '#0DCAF0'
-        }
-    };
-    
-    const config = typeConfig[type] || typeConfig.error;
-    
-    const notificationDiv = document.createElement('div');
-    notificationDiv.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${config.background};
-        color: white;
-        padding: 12px 16px;
-        border-radius: 8px;
-        z-index: 10000;
-        font-size: 14px;
-        font-weight: 500;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    `;
-    
-    notificationDiv.textContent = message;
-    document.body.appendChild(notificationDiv);
-    
-    const timeout = type === 'error' ? 5000 : 3000;
-    setTimeout(function() {
-        if (notificationDiv.parentNode) {
-            notificationDiv.parentNode.removeChild(notificationDiv);
-        }
-    }, timeout);
+    console.log(type === 'success' ? '✅' : '❌', message);
 }
 
-// ===========================
-// UTILITY FUNCTIONS
-// ===========================
-
-function fileToBase64(file) {
-    return new Promise(function(resolve, reject) {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = function() {
-            const result = reader.result;
-            const base64 = result.split(',')[1];
-            resolve(base64);
-        };
-        reader.onerror = function(error) {
-            reject(error);
-        };
-    });
+function hideError() {
+    elements.errorMessage.style.display = 'none';
 }
-
-console.log('🚀 EDITOR MULTIMODO: Catálogo + Instagram Reel - Versión Completa');
