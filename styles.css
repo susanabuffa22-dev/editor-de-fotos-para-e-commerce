@@ -1,6 +1,6 @@
 /* ===========================
    E-COMMERCE PHOTO EDITOR
-   Design System CSS
+   Design System CSS - VERSIÓN MULTIMODO COMPLETA
    =========================== */
 
 /* CSS Reset & Base Styles */
@@ -216,6 +216,88 @@ body {
     height: 200px;
     object-fit: cover;
     display: block;
+}
+
+/* ===========================
+   MODE SELECTOR PANEL STYLES
+   =========================== */
+
+.mode-panel {
+    margin: var(--space-lg) 0;
+    text-align: center;
+    background: var(--neutral-50);
+    border: 1px solid var(--neutral-300);
+}
+
+.mode-panel h2 {
+    color: var(--primary-700);
+    margin-bottom: var(--space-md);
+}
+
+.mode-selector {
+    display: flex;
+    gap: var(--space-md);
+    margin: var(--space-md) 0;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.mode-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-lg) var(--space-xl);
+    border: 2px solid var(--neutral-300);
+    border-radius: var(--radius-md);
+    background: var(--neutral-100);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    min-width: 160px;
+    font-size: 14px;
+    font-weight: var(--font-weight-medium);
+    color: var(--neutral-600);
+}
+
+.mode-btn:hover {
+    border-color: var(--primary-500);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(255, 107, 107, 0.15);
+}
+
+.mode-btn.active {
+    border-color: var(--primary-500);
+    background: var(--primary-100);
+    color: var(--primary-700);
+    box-shadow: var(--shadow-interactive);
+}
+
+.mode-btn small {
+    font-size: 11px;
+    color: var(--neutral-600);
+    margin-top: 4px;
+    font-weight: var(--font-weight-regular);
+}
+
+.mode-btn.active small {
+    color: var(--primary-700);
+}
+
+.current-mode-display {
+    text-align: center;
+    margin-top: var(--space-md);
+    padding: var(--space-sm);
+    background: var(--neutral-100);
+    border-radius: var(--radius-sm);
+    border-left: 4px solid var(--primary-500);
+}
+
+.current-mode-display span {
+    font-size: 13px;
+    color: var(--neutral-600);
+}
+
+.current-mode-display strong {
+    color: var(--primary-700);
 }
 
 /* ===========================
@@ -451,6 +533,15 @@ body {
     .panel {
         padding: var(--space-md);
     }
+    
+    .mode-selector {
+        gap: var(--space-sm);
+    }
+    
+    .mode-btn {
+        min-width: 140px;
+        padding: var(--space-md) var(--space-lg);
+    }
 }
 
 /* Mobile Styles */
@@ -469,16 +560,32 @@ body {
         gap: var(--space-lg);
     }
     
+    .mode-panel {
+        order: 2;
+    }
+    
     .tools-panel {
         order: 3;
     }
     
     .preview-panel {
-        order: 2;
+        order: 4;
     }
     
     .upload-panel {
         order: 1;
+    }
+    
+    .mode-selector {
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+    
+    .mode-btn {
+        width: 100%;
+        max-width: 280px;
+        min-width: auto;
     }
     
     .preview-container {
@@ -521,6 +628,15 @@ body {
     
     .panel {
         padding: var(--space-sm);
+    }
+    
+    .mode-btn {
+        padding: var(--space-md);
+        font-size: 13px;
+    }
+    
+    .mode-btn small {
+        font-size: 10px;
     }
     
     .image-display {
@@ -644,7 +760,8 @@ body {
 
 /* Focus Styles */
 .tool-btn:focus-visible,
-.action-btn:focus-visible {
+.action-btn:focus-visible,
+.mode-btn:focus-visible {
     outline: 2px solid var(--primary-500);
     outline-offset: 2px;
 }
@@ -662,5 +779,9 @@ body {
     
     .tool-btn {
         border: 1px solid var(--neutral-300);
+    }
+    
+    .mode-btn {
+        border-width: 3px;
     }
 }
