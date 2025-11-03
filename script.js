@@ -1,7 +1,7 @@
 // ===========================
-// EDITOR MULTIMODO - ULTRA ROBUSTO
+// EDITOR MULTIMODO - CSP SAFE
 // ===========================
-// 🎯 Versión ultra robusta con validación completa de elementos
+// 🎯 Versión compatible con Content Security Policy
 
 // Configuración
 const API_KEY = 'AIzaSyBAuTlMG2kQWBIpaylzCUhGJopB2JcNh6I';
@@ -53,10 +53,10 @@ const elements = {
 };
 
 // ===========================
-// INICIALIZACIÓN ULTRA ROBUSTA
+// INICIALIZACIÓN CSP SAFE
 // ===========================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Editor Multimodo Iniciado (Ultra Robusto)');
+    console.log('🚀 Editor Multimodo Iniciado (CSP Safe)');
     
     // ✅ OCULTAR MENSAJE DE API KEY AUTOMÁTICAMENTE
     hideApiKeyNotice();
@@ -78,6 +78,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Log del estado final
     logFinalStatus();
 });
+
+// ===========================
+// OCULTAR MENSAJE DE API KEY
+// ===========================
+function hideApiKeyNotice() {
+    const apiNotice = document.getElementById('apiNotice');
+    if (apiNotice) {
+        apiNotice.style.display = 'none';
+        console.log('✅ Mensaje de API Key ocultado - API configurada');
+    }
+}
 
 // ===========================
 // INICIALIZACIÓN DE ELEMENTOS
@@ -157,49 +168,121 @@ function createModeSelectorUltraRobust() {
         document.body  // Último recurso: body
     ];
     
-    const target = insertionTargets.find(el => el !== null);
+    const target = insertionTargets.find(function(el) { return el !== null; });
     
     if (!target) {
         console.warn('⚠️ No se encontró elemento objetivo para insertar selector');
         return;
     }
     
-    // Crear selector de modo
-    const modeSelectorHTML = `
-        <div class="mode-selector" id="mode-selector-section">
-            <h3>Seleccionar Destino</h3>
-            <div class="mode-buttons">
-                <button class="mode-btn active" id="catalog-mode">
-                    <span class="mode-icon">🛍️</span>
-                    <div class="mode-info">
-                        <div class="mode-name">Catálogo Web</div>
-                        <div class="mode-dimensions">500×500px</div>
-                    </div>
-                </button>
-                <button class="mode-btn" id="instagram-mode">
-                    <span class="mode-icon">📱</span>
-                    <div class="mode-info">
-                        <div class="mode-name">Instagram Reel</div>
-                        <div class="mode-dimensions">1080×1920px</div>
-                    </div>
-                </button>
-            </div>
-            <div class="current-mode-display" id="current-mode-display">
-                <span class="mode-icon">🛍️</span>
-                <div class="mode-info">
-                    <div class="mode-name">Catálogo Web</div>
-                    <div class="mode-dimensions">500×500px</div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Insertar de forma segura
+    // Crear selector de modo usando createElement para CSP
+    createModeSelectorElement(target);
+}
+
+// ===========================
+// CREAR ELEMENTOS CSP SAFE
+// ===========================
+function createModeSelectorElement(target) {
     try {
+        // Crear el contenedor principal
+        const modeSelectorDiv = document.createElement('div');
+        modeSelectorDiv.className = 'mode-selector';
+        modeSelectorDiv.id = 'mode-selector-section';
+        
+        // Crear el título
+        const title = document.createElement('h3');
+        title.textContent = 'Seleccionar Destino';
+        modeSelectorDiv.appendChild(title);
+        
+        // Crear contenedor de botones
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.className = 'mode-buttons';
+        modeSelectorDiv.appendChild(buttonsContainer);
+        
+        // Botón Catálogo
+        const catalogBtn = document.createElement('button');
+        catalogBtn.className = 'mode-btn active';
+        catalogBtn.id = 'catalog-mode';
+        catalogBtn.addEventListener('click', function() { switchMode('catalog'); });
+        
+        const catalogIcon = document.createElement('span');
+        catalogIcon.className = 'mode-icon';
+        catalogIcon.textContent = '🛍️';
+        catalogBtn.appendChild(catalogIcon);
+        
+        const catalogInfo = document.createElement('div');
+        catalogInfo.className = 'mode-info';
+        
+        const catalogName = document.createElement('div');
+        catalogName.className = 'mode-name';
+        catalogName.textContent = 'Catálogo Web';
+        catalogInfo.appendChild(catalogName);
+        
+        const catalogDim = document.createElement('div');
+        catalogDim.className = 'mode-dimensions';
+        catalogDim.textContent = '500×500px';
+        catalogInfo.appendChild(catalogDim);
+        
+        catalogBtn.appendChild(catalogInfo);
+        buttonsContainer.appendChild(catalogBtn);
+        
+        // Botón Instagram
+        const instagramBtn = document.createElement('button');
+        instagramBtn.className = 'mode-btn';
+        instagramBtn.id = 'instagram-mode';
+        instagramBtn.addEventListener('click', function() { switchMode('instagram'); });
+        
+        const instagramIcon = document.createElement('span');
+        instagramIcon.className = 'mode-icon';
+        instagramIcon.textContent = '📱';
+        instagramBtn.appendChild(instagramIcon);
+        
+        const instagramInfo = document.createElement('div');
+        instagramInfo.className = 'mode-info';
+        
+        const instagramName = document.createElement('div');
+        instagramName.className = 'mode-name';
+        instagramName.textContent = 'Instagram Reel';
+        instagramInfo.appendChild(instagramName);
+        
+        const instagramDim = document.createElement('div');
+        instagramDim.className = 'mode-dimensions';
+        instagramDim.textContent = '1080×1920px';
+        instagramInfo.appendChild(instagramDim);
+        
+        instagramBtn.appendChild(instagramInfo);
+        buttonsContainer.appendChild(instagramBtn);
+        
+        // Display de modo actual
+        const currentModeDiv = document.createElement('div');
+        currentModeDiv.className = 'current-mode-display';
+        currentModeDiv.id = 'current-mode-display';
+        
+        const currentIcon = document.createElement('span');
+        currentIcon.className = 'mode-icon';
+        currentIcon.textContent = '🛍️';
+        currentModeDiv.appendChild(currentIcon);
+        
+        const currentInfo = document.createElement('div');
+        currentInfo.className = 'mode-info';
+        
+        const currentName = document.createElement('div');
+        currentName.className = 'mode-name';
+        currentName.textContent = 'Catálogo Web';
+        currentInfo.appendChild(currentName);
+        
+        const currentDim = document.createElement('div');
+        currentDim.className = 'mode-dimensions';
+        currentDim.textContent = '500×500px';
+        currentInfo.appendChild(currentDim);
+        
+        currentModeDiv.appendChild(currentInfo);
+        
+        // Insertar en el DOM
         if (target.id === 'controls' || target.tagName === 'FIELDSET') {
-            target.insertAdjacentHTML('beforebegin', modeSelectorHTML);
+            target.parentNode.insertBefore(modeSelectorDiv, target);
         } else {
-            target.insertAdjacentHTML('afterbegin', modeSelectorHTML);
+            target.insertBefore(modeSelectorDiv, target.firstChild);
         }
         
         // Actualizar referencias
@@ -207,7 +290,7 @@ function createModeSelectorUltraRobust() {
         elements.instagramMode = document.getElementById('instagram-mode');
         elements.currentModeDisplay = document.getElementById('current-mode-display');
         
-        console.log('✅ Selector de modo creado exitosamente');
+        console.log('✅ Selector de modo creado exitosamente (CSP Safe)');
         
     } catch (error) {
         console.error('❌ Error creando selector de modo:', error);
@@ -239,21 +322,21 @@ function setupEventListenersSafe() {
     
     // Tool handlers con validación
     if (elements.btnWhiteBackground) {
-        elements.btnWhiteBackground.addEventListener('click', () => processInMode('white_background'));
+        elements.btnWhiteBackground.addEventListener('click', function() { processInMode('white_background'); });
         console.log('✅ btnWhiteBackground listener configurado');
     } else {
         console.warn('⚠️ btnWhiteBackground no encontrado');
     }
     
     if (elements.btnSmile) {
-        elements.btnSmile.addEventListener('click', () => processInMode('smile_enhancement'));
+        elements.btnSmile.addEventListener('click', function() { processInMode('smile_enhancement'); });
         console.log('✅ btnSmile listener configurado');
     } else {
         console.warn('⚠️ btnSmile no encontrado');
     }
     
     if (elements.btnVirtualTryOn) {
-        elements.btnVirtualTryOn.addEventListener('click', () => processInMode('virtual_tryon'));
+        elements.btnVirtualTryOn.addEventListener('click', function() { processInMode('virtual_tryon'); });
         console.log('✅ btnVirtualTryOn listener configurado');
     } else {
         console.warn('⚠️ btnVirtualTryOn no encontrado');
@@ -291,22 +374,11 @@ function setupModeSelectorSafe() {
     }
     
     try {
-        elements.catalogMode.addEventListener('click', () => switchMode('catalog'));
-        elements.instagramMode.addEventListener('click', () => switchMode('instagram'));
+        elements.catalogMode.addEventListener('click', function() { switchMode('catalog'); });
+        elements.instagramMode.addEventListener('click', function() { switchMode('instagram'); });
         console.log('✅ Modo selector listeners configurados');
     } catch (error) {
         console.error('❌ Error configurando modo selector:', error);
-    }
-}
-
-// ===========================
-// OCULTAR MENSAJE DE API KEY
-// ===========================
-function hideApiKeyNotice() {
-    const apiNotice = document.getElementById('apiNotice');
-    if (apiNotice) {
-        apiNotice.style.display = 'none';
-        console.log('✅ Mensaje de API Key ocultado - API configurada');
     }
 }
 
@@ -316,20 +388,20 @@ function hideApiKeyNotice() {
 function logFinalStatus() {
     console.log('\n📊 === REPORTE FINAL DE ELEMENTOS ===');
     
-    let present = 0;
-    let missing = 0;
+    var present = 0;
+    var missing = 0;
     
-    for (const [key, element] of Object.entries(elements)) {
-        if (element) {
-            console.log(`✅ ${key}: Encontrado`);
+    for (var key in elements) {
+        if (elements.hasOwnProperty(key) && elements[key]) {
+            console.log('✅ ' + key + ': Encontrado');
             present++;
         } else {
-            console.log(`❌ ${key}: NO encontrado`);
+            console.log('❌ ' + key + ': NO encontrado');
             missing++;
         }
     }
     
-    console.log(`\n📈 Resumen: ${present} elementos presentes, ${missing} elementos faltantes`);
+    console.log('\n📈 Resumen: ' + present + ' elementos presentes, ' + missing + ' elementos faltantes');
     console.log('=====================================\n');
 }
 
@@ -348,7 +420,13 @@ function switchMode(mode) {
     updateModeDisplay();
     
     if (base64ImageData && elements.editedImage) {
-        elements.editedImage.innerHTML = '<p class="placeholder">Procesar imagen en modo ' + modeConfigs[mode].name + '</p>';
+        // Usar textContent en lugar de innerHTML
+        var placeholder = document.createElement('p');
+        placeholder.className = 'placeholder';
+        placeholder.textContent = 'Procesar imagen en modo ' + modeConfigs[mode].name;
+        
+        elements.editedImage.innerHTML = '';
+        elements.editedImage.appendChild(placeholder);
     }
     
     console.log('🔄 Modo cambiado a: ' + modeConfigs[mode].name);
@@ -359,16 +437,32 @@ function initializeMode() {
 }
 
 function updateModeDisplay() {
-    const config = modeConfigs[currentMode];
+    var config = modeConfigs[currentMode];
     
     if (elements.currentModeDisplay) {
-        elements.currentModeDisplay.innerHTML = `
-            <span class="mode-icon">${config.icon}</span>
-            <div class="mode-info">
-                <div class="mode-name">${config.name}</div>
-                <div class="mode-dimensions">${config.width}×${config.height}px</div>
-            </div>
-        `;
+        // Actualizar usando textContent en lugar de innerHTML
+        elements.currentModeDisplay.textContent = '';
+        
+        var iconSpan = document.createElement('span');
+        iconSpan.className = 'mode-icon';
+        iconSpan.textContent = config.icon;
+        
+        var infoDiv = document.createElement('div');
+        infoDiv.className = 'mode-info';
+        
+        var nameDiv = document.createElement('div');
+        nameDiv.className = 'mode-name';
+        nameDiv.textContent = config.name;
+        
+        var dimDiv = document.createElement('div');
+        dimDiv.className = 'mode-dimensions';
+        dimDiv.textContent = config.width + '×' + config.height + 'px';
+        
+        infoDiv.appendChild(nameDiv);
+        infoDiv.appendChild(dimDiv);
+        
+        elements.currentModeDisplay.appendChild(iconSpan);
+        elements.currentModeDisplay.appendChild(infoDiv);
     }
     
     // Actualizar botones
@@ -387,7 +481,7 @@ function updateModeDisplay() {
 // ===========================
 // SISTEMA DE COLA PROCESAMIENTO
 // ===========================
-async function processInMode(processType) {
+function processInMode(processType) {
     if (!base64ImageData) {
         showError('Por favor, sube una imagen primero');
         return;
@@ -398,37 +492,42 @@ async function processInMode(processType) {
         return;
     }
     
-    const task = { type: processType, timestamp: Date.now() };
+    var task = { type: processType, timestamp: Date.now() };
     processingQueue.push(task);
     
-    await processQueue();
+    processQueue();
 }
 
-async function processQueue() {
+function processQueue() {
     if (isProcessing || processingQueue.length === 0) {
         return;
     }
     
     isProcessing = true;
-    const task = processingQueue.shift();
+    var task = processingQueue.shift();
     
     try {
         console.log('🎯 Procesando: ' + task.type + ' en modo ' + modeConfigs[currentMode].name);
         
-        const modeConfig = modeConfigs[currentMode];
-        const processedData = await processImageWithQueue(base64ImageData, task.type, modeConfig);
-        
-        if (processedData && elements.editedImage) {
-            elements.editedImage.innerHTML = '<img src="' + processedData + '" alt="Imagen procesada">';
-            
-            if (elements.btnDownload) elements.btnDownload.disabled = false;
-            if (elements.btnRetry) elements.btnRetry.disabled = false;
-            
-            showError(`✅ Procesamiento completado en modo ${modeConfig.name}`, 'success');
-            console.log('✅ Procesamiento completado');
-        } else {
-            showError('Error en el procesamiento');
-        }
+        var modeConfig = modeConfigs[currentMode];
+        processImageWithQueue(base64ImageData, task.type, modeConfig, function(processedData) {
+            if (processedData && elements.editedImage) {
+                // Mostrar imagen procesada usando createElement
+                elements.editedImage.innerHTML = '';
+                var img = document.createElement('img');
+                img.src = processedData;
+                img.alt = 'Imagen procesada';
+                elements.editedImage.appendChild(img);
+                
+                if (elements.btnDownload) elements.btnDownload.disabled = false;
+                if (elements.btnRetry) elements.btnRetry.disabled = false;
+                
+                showError('✅ Procesamiento completado en modo ' + modeConfig.name, 'success');
+                console.log('✅ Procesamiento completado');
+            } else {
+                showError('Error en el procesamiento');
+            }
+        });
         
     } catch (error) {
         console.error('❌ Error en procesamiento:', error);
@@ -437,262 +536,260 @@ async function processQueue() {
         isProcessing = false;
         
         if (processingQueue.length > 0) {
-            setTimeout(processQueue, 100);
+            setTimeout(function() {
+                processQueue();
+            }, 100);
         }
     }
 }
 
 // ===========================
-// PROCESAMIENTO DE IMAGEN CORREGIDO
+// PROCESAMIENTO DE IMAGEN CSP SAFE
 // ===========================
-async function processImageWithQueue(imageBase64, processType, modeConfig) {
-    return new Promise(async (resolve) => {
-        try {
-            const orientation = await analyzeImageOrientation(imageBase64);
+function processImageWithQueue(imageBase64, processType, modeConfig, callback) {
+    try {
+        analyzeImageOrientation(imageBase64, function(orientation) {
             console.log('📊 Orientación: ' + orientation);
             
-            let processedImage;
-            
             if (modeConfig.strategy === 'expansion') {
-                processedImage = await processCatalogMode(imageBase64, orientation, processType);
+                processCatalogMode(imageBase64, orientation, processType, function(processedImage) {
+                    if (processType !== 'dimensions_only') {
+                        callImageAPI(processedImage, processType, modeConfig, function(resultImage) {
+                            callback(resultImage);
+                        });
+                    } else {
+                        callback(processedImage);
+                    }
+                });
             } else {
-                processedImage = await processInstagramMode(imageBase64, orientation, processType);
+                processInstagramMode(imageBase64, orientation, processType, function(processedImage) {
+                    if (processType !== 'dimensions_only') {
+                        callImageAPI(processedImage, processType, modeConfig, function(resultImage) {
+                            callback(resultImage);
+                        });
+                    } else {
+                        callback(processedImage);
+                    }
+                });
             }
-            
-            if (processType !== 'dimensions_only') {
-                processedImage = await callImageAPI(processedImage, processType, modeConfig);
-            }
-            
-            resolve(processedImage);
-            
-        } catch (error) {
-            console.error('❌ Error en procesamiento con cola:', error);
-            resolve(null);
-        }
-    });
+        });
+        
+    } catch (error) {
+        console.error('❌ Error en procesamiento con cola:', error);
+        callback(null);
+    }
 }
 
 // ===========================
 // LÓGICA POR MODO
 // ===========================
-async function processCatalogMode(imageBase64, orientation, processType) {
-    const modeConfig = modeConfigs.catalog;
+function processCatalogMode(imageBase64, orientation, processType, callback) {
+    var modeConfig = modeConfigs.catalog;
     
     switch (orientation) {
         case 'vertical':
             console.log('📏 Procesando imagen vertical - expandir con IA');
-            return await processWithAIExpansion(imageBase64, processType, modeConfig);
+            processWithAIExpansion(imageBase64, processType, modeConfig, callback);
+            break;
             
         case 'square':
             console.log('📐 Procesando imagen cuadrada - mantener');
-            return imageBase64;
+            callback(imageBase64);
+            break;
             
         case 'horizontal':
             console.log('📏 Procesando imagen horizontal - centrar');
-            return await smartCropToDimensions(imageBase64, modeConfig.width, modeConfig.height);
+            smartCropToDimensions(imageBase64, modeConfig.width, modeConfig.height, callback);
+            break;
             
         default:
-            return imageBase64;
+            callback(imageBase64);
     }
 }
 
-async function processInstagramMode(imageBase64, orientation, processType) {
-    const modeConfig = modeConfigs.instagram;
+function processInstagramMode(imageBase64, orientation, processType, callback) {
+    var modeConfig = modeConfigs.instagram;
     
     switch (orientation) {
         case 'vertical':
             console.log('📏 Procesando imagen vertical - mantener');
-            return imageBase64;
+            callback(imageBase64);
+            break;
             
         case 'square':
             console.log('📐 Procesando imagen cuadrada - recortar a vertical');
-            return await cropSquareToVertical(imageBase64, modeConfig.width, modeConfig.height);
+            cropSquareToVertical(imageBase64, modeConfig.width, modeConfig.height, callback);
+            break;
             
         case 'horizontal':
             console.log('📏 Procesando imagen horizontal - recortar a vertical');
-            return await cropToVertical(imageBase64, modeConfig.width, modeConfig.height);
+            cropToVertical(imageBase64, modeConfig.width, modeConfig.height, callback);
+            break;
             
         default:
-            return imageBase64;
+            callback(imageBase64);
     }
 }
 
 // ===========================
 // FUNCIONES DE PROCESAMIENTO
 // ===========================
-async function processWithAIExpansion(imageBase64, processType, modeConfig) {
-    const prompt = `Edit this image to expand and fill any missing spaces to create a complete ${modeConfig.width}x${modeConfig.height}px square format. Continue the original image naturally and seamlessly where spaces are needed. Maintain the subject and style of the original image.`;
+function processWithAIExpansion(imageBase64, processType, modeConfig, callback) {
+    var prompt = 'Edit this image to expand and fill any missing spaces to create a complete ' + modeConfig.width + 'x' + modeConfig.height + 'px square format. Continue the original image naturally and seamlessly where spaces are needed. Maintain the subject and style of the original image.';
     
-    return await callImageAPI(imageBase64, prompt, modeConfig);
+    callImageAPI(imageBase64, prompt, modeConfig, callback);
 }
 
-async function smartCropToDimensions(imageBase64, targetWidth, targetHeight) {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.src = 'data:image/jpeg;base64,' + imageBase64;
+function smartCropToDimensions(imageBase64, targetWidth, targetHeight, callback) {
+    var img = new Image();
+    img.src = 'data:image/jpeg;base64,' + imageBase64;
+    
+    img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
         
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            canvas.width = targetWidth;
-            canvas.height = targetHeight;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            const imgWidth = img.width;
-            const imgHeight = img.height;
-            const scaleX = targetWidth / imgWidth;
-            const scaleY = targetHeight / imgHeight;
-            const scale = Math.max(scaleX, scaleY);
-            
-            const scaledWidth = imgWidth * scale;
-            const scaledHeight = imgHeight * scale;
-            const offsetX = (targetWidth - scaledWidth) / 2;
-            const offsetY = (targetHeight - scaledHeight) / 2;
-            
-            ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
-            
-            const resultUrl = canvas.toDataURL('image/jpeg', 0.9);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            console.log('✅ Procesamiento completado: ' + targetWidth + 'x' + targetHeight + 'px');
-            resolve(resultUrl);
-        };
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
         
-        img.onerror = function() {
-            console.error('❌ Error cargando imagen para procesamiento');
-            resolve(null);
-        };
-    });
+        var imgWidth = img.width;
+        var imgHeight = img.height;
+        var scaleX = targetWidth / imgWidth;
+        var scaleY = targetHeight / imgHeight;
+        var scale = Math.max(scaleX, scaleY);
+        
+        var scaledWidth = imgWidth * scale;
+        var scaledHeight = imgHeight * scale;
+        var offsetX = (targetWidth - scaledWidth) / 2;
+        var offsetY = (targetHeight - scaledHeight) / 2;
+        
+        ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
+        
+        var resultUrl = canvas.toDataURL('image/jpeg', 0.9);
+        
+        console.log('✅ Procesamiento completado: ' + targetWidth + 'x' + targetHeight + 'px');
+        callback(resultUrl);
+    };
+    
+    img.onerror = function() {
+        console.error('❌ Error cargando imagen para procesamiento');
+        callback(null);
+    };
 }
 
-async function cropSquareToVertical(imageBase64, targetWidth, targetHeight) {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.src = 'data:image/jpeg;base64,' + imageBase64;
+function cropSquareToVertical(imageBase64, targetWidth, targetHeight, callback) {
+    var img = new Image();
+    img.src = 'data:image/jpeg;base64,' + imageBase64;
+    
+    img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
         
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            canvas.width = targetWidth;
-            canvas.height = targetHeight;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            const sourceSize = Math.min(img.width, img.height);
-            const sourceX = (img.width - sourceSize) / 2;
-            const sourceY = (img.height - sourceSize) / 2;
-            
-            const scaleX = targetWidth / sourceSize;
-            const scaleY = targetHeight / sourceSize;
-            const scale = Math.max(scaleX, scaleY);
-            
-            const scaledWidth = sourceSize * scale;
-            const scaledHeight = sourceSize * scale;
-            const offsetX = (targetWidth - scaledWidth) / 2;
-            const offsetY = (targetHeight - scaledHeight) / 2;
-            
-            ctx.drawImage(img, sourceX, sourceY, sourceSize, sourceSize, offsetX, offsetY, scaledWidth, scaledHeight);
-            
-            const resultUrl = canvas.toDataURL('image/jpeg', 0.9);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            console.log('✅ Recorte cuadrado a vertical completado');
-            resolve(resultUrl);
-        };
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
         
-        img.onerror = function() {
-            console.error('❌ Error en recorte cuadrado a vertical');
-            resolve(null);
-        };
-    });
+        var sourceSize = Math.min(img.width, img.height);
+        var sourceX = (img.width - sourceSize) / 2;
+        var sourceY = (img.height - sourceSize) / 2;
+        
+        var scaleX = targetWidth / sourceSize;
+        var scaleY = targetHeight / sourceSize;
+        var scale = Math.max(scaleX, scaleY);
+        
+        var scaledWidth = sourceSize * scale;
+        var scaledHeight = sourceSize * scale;
+        var offsetX = (targetWidth - scaledWidth) / 2;
+        var offsetY = (targetHeight - scaledHeight) / 2;
+        
+        ctx.drawImage(img, sourceX, sourceY, sourceSize, sourceSize, offsetX, offsetY, scaledWidth, scaledHeight);
+        
+        var resultUrl = canvas.toDataURL('image/jpeg', 0.9);
+        
+        console.log('✅ Recorte cuadrado a vertical completado');
+        callback(resultUrl);
+    };
+    
+    img.onerror = function() {
+        console.error('❌ Error en recorte cuadrado a vertical');
+        callback(null);
+    };
 }
 
-async function cropToVertical(imageBase64, targetWidth, targetHeight) {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.src = 'data:image/jpeg;base64,' + imageBase64;
+function cropToVertical(imageBase64, targetWidth, targetHeight, callback) {
+    var img = new Image();
+    img.src = 'data:image/jpeg;base64,' + imageBase64;
+    
+    img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
         
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            canvas.width = targetWidth;
-            canvas.height = targetHeight;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            const sourceHeight = img.height;
-            const sourceWidth = Math.floor(sourceHeight * (targetWidth / targetHeight));
-            const sourceX = Math.floor((img.width - sourceWidth) / 2);
-            const sourceY = 0;
-            
-            const scaleX = targetWidth / sourceWidth;
-            const scaleY = targetHeight / sourceHeight;
-            const scale = Math.max(scaleX, scaleY);
-            
-            const scaledWidth = sourceWidth * scale;
-            const scaledHeight = sourceHeight * scale;
-            const offsetX = (targetWidth - scaledWidth) / 2;
-            const offsetY = (targetHeight - scaledHeight) / 2;
-            
-            ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, offsetX, offsetY, scaledWidth, scaledHeight);
-            
-            const resultUrl = canvas.toDataURL('image/jpeg', 0.9);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            console.log('✅ Recorte a vertical completado');
-            resolve(resultUrl);
-        };
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
         
-        img.onerror = function() {
-            console.error('❌ Error en recorte a vertical');
-            resolve(null);
-        };
-    });
+        var sourceHeight = img.height;
+        var sourceWidth = Math.floor(sourceHeight * (targetWidth / targetHeight));
+        var sourceX = Math.floor((img.width - sourceWidth) / 2);
+        var sourceY = 0;
+        
+        var scaleX = targetWidth / sourceWidth;
+        var scaleY = targetHeight / sourceHeight;
+        var scale = Math.max(scaleX, scaleY);
+        
+        var scaledWidth = sourceWidth * scale;
+        var scaledHeight = sourceHeight * scale;
+        var offsetX = (targetWidth - scaledWidth) / 2;
+        var offsetY = (targetHeight - scaledHeight) / 2;
+        
+        ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, offsetX, offsetY, scaledWidth, scaledHeight);
+        
+        var resultUrl = canvas.toDataURL('image/jpeg', 0.9);
+        
+        console.log('✅ Recorte a vertical completado');
+        callback(resultUrl);
+    };
+    
+    img.onerror = function() {
+        console.error('❌ Error en recorte a vertical');
+        callback(null);
+    };
 }
 
 // ===========================
 // ANÁLISIS DE ORIENTACIÓN
 // ===========================
-async function analyzeImageOrientation(imageBase64) {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.src = 'data:image/jpeg;base64,' + imageBase64;
+function analyzeImageOrientation(imageBase64, callback) {
+    var img = new Image();
+    img.src = 'data:image/jpeg;base64,' + imageBase64;
+    
+    img.onload = function() {
+        var width = img.width;
+        var height = img.height;
+        var ratio = width / height;
         
-        img.onload = function() {
-            const width = img.width;
-            const height = img.height;
-            const ratio = width / height;
-            
-            let orientation;
-            if (ratio > 1.2) {
-                orientation = 'horizontal';
-            } else if (ratio < 0.8) {
-                orientation = 'vertical';
-            } else {
-                orientation = 'square';
-            }
-            
-            console.log('📊 Análisis - Ancho: ' + width + ', Alto: ' + height + ', Ratio: ' + ratio.toFixed(2) + ', Orientación: ' + orientation);
-            resolve(orientation);
-        };
+        var orientation;
+        if (ratio > 1.2) {
+            orientation = 'horizontal';
+        } else if (ratio < 0.8) {
+            orientation = 'vertical';
+        } else {
+            orientation = 'square';
+        }
         
-        img.onerror = function() {
-            console.error('❌ Error analizando orientación');
-            resolve('square');
-        };
-    });
+        console.log('📊 Análisis - Ancho: ' + width + ', Alto: ' + height + ', Ratio: ' + ratio.toFixed(2) + ', Orientación: ' + orientation);
+        callback(orientation);
+    };
+    
+    img.onerror = function() {
+        console.error('❌ Error analizando orientación');
+        callback('square');
+    };
 }
 
 // ===========================
 // API DE IMAGEN IA
 // ===========================
-async function callImageAPI(imageBase64, processType, modeConfig) {
+function callImageAPI(imageBase64, processType, modeConfig, callback) {
     try {
-        let prompt;
+        var prompt;
         switch (processType) {
             case 'white_background':
                 prompt = 'Remove the background and replace it with a pure white background. Keep the main subject intact.';
@@ -707,7 +804,7 @@ async function callImageAPI(imageBase64, processType, modeConfig) {
                 prompt = 'Enhance this image to make it more professional and appealing for e-commerce use.';
         }
         
-        const requestBody = {
+        var requestBody = {
             contents: [{
                 parts: [
                     {
@@ -731,44 +828,57 @@ async function callImageAPI(imageBase64, processType, modeConfig) {
         
         console.log('🤖 Llamando a API de imagen...');
         
-        const response = await fetch(API_ENDPOINT, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody)
-        });
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', API_ENDPOINT, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
         
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        
-        if (result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts) {
-            const parts = result.candidates[0].content.parts;
-            
-            for (let part of parts) {
-                if (part.inline_data && part.inline_data.data) {
-                    console.log('✅ Imagen generada exitosamente');
-                    return 'data:image/jpeg;base64,' + part.inline_data.data;
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                try {
+                    var result = JSON.parse(xhr.responseText);
+                    
+                    if (result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts) {
+                        var parts = result.candidates[0].content.parts;
+                        
+                        for (var i = 0; i < parts.length; i++) {
+                            if (parts[i].inline_data && parts[i].inline_data.data) {
+                                console.log('✅ Imagen generada exitosamente');
+                                callback('data:image/jpeg;base64,' + parts[i].inline_data.data);
+                                return;
+                            }
+                        }
+                    }
+                    
+                    throw new Error('No se pudo extraer imagen de la respuesta');
+                    
+                } catch (parseError) {
+                    console.error('❌ Error parseando respuesta:', parseError);
+                    callback(null);
                 }
+            } else {
+                console.error('❌ Error HTTP:', xhr.status);
+                callback(null);
             }
-        }
+        };
         
-        throw new Error('No se pudo extraer imagen de la respuesta');
+        xhr.onerror = function() {
+            console.error('❌ Error de red');
+            callback(null);
+        };
+        
+        xhr.send(JSON.stringify(requestBody));
         
     } catch (error) {
         console.error('❌ Error llamando API:', error);
-        throw error;
+        callback(null);
     }
 }
 
 // ===========================
 // MANEJO DE UPLOAD
 // ===========================
-async function handleImageUpload(event) {
-    const file = event.target.files[0];
+function handleImageUpload(event) {
+    var file = event.target.files[0];
     if (!file) return;
     
     try {
@@ -787,30 +897,40 @@ async function handleImageUpload(event) {
             return;
         }
         
-        const base64 = await fileToBase64(file);
-        base64ImageData = base64;
-        
-        const dataUrl = 'data:' + file.type + ';base64,' + base64;
-        
-        if (elements.personImage) {
-            elements.personImage.src = dataUrl;
-        }
-        if (elements.personPreview) {
-            elements.personPreview.style.display = 'block';
-        }
-        if (elements.originalImage) {
-            elements.originalImage.innerHTML = '<img src="' + dataUrl + '" alt="Imagen original">';
-        }
-        if (elements.editedImage) {
-            elements.editedImage.innerHTML = '<p class="placeholder">Selecciona una herramienta para procesar en modo ' + modeConfigs[currentMode].name + '</p>';
-        }
-        
-        enableControls();
-        if (elements.garmentSection) {
-            elements.garmentSection.style.display = 'flex';
-        }
-        
-        console.log('✅ Imagen cargada exitosamente');
+        fileToBase64(file, function(base64) {
+            base64ImageData = base64;
+            
+            var dataUrl = 'data:' + file.type + ';base64,' + base64;
+            
+            if (elements.personImage) {
+                elements.personImage.src = dataUrl;
+            }
+            if (elements.personPreview) {
+                elements.personPreview.style.display = 'block';
+            }
+            if (elements.originalImage) {
+                elements.originalImage.innerHTML = '';
+                var img = document.createElement('img');
+                img.src = dataUrl;
+                img.alt = 'Imagen original';
+                elements.originalImage.appendChild(img);
+            }
+            if (elements.editedImage) {
+                elements.editedImage.innerHTML = '';
+                var placeholder = document.createElement('p');
+                placeholder.className = 'placeholder';
+                placeholder.textContent = 'Selecciona una herramienta para procesar en modo ' + modeConfigs[currentMode].name;
+                elements.editedImage.appendChild(placeholder);
+            }
+            
+            // Habilitar controles inmediatamente (sin delay para evitar CSP)
+            enableControls();
+            if (elements.garmentSection) {
+                elements.garmentSection.style.display = 'flex';
+            }
+            
+            console.log('✅ Imagen cargada exitosamente');
+        });
         
     } catch (error) {
         console.error('❌ Error al cargar imagen:', error);
@@ -838,10 +958,10 @@ function handleDrop(event) {
         elements.uploadArea.classList.remove('drag-over');
     }
     
-    const files = event.dataTransfer.files;
+    var files = event.dataTransfer.files;
     if (files.length > 0 && elements.fileInput) {
-        const file = files[0];
-        const dt = new DataTransfer();
+        var file = files[0];
+        var dt = new DataTransfer();
         dt.items.add(file);
         elements.fileInput.files = dt.files;
         
@@ -849,31 +969,114 @@ function handleDrop(event) {
     }
 }
 
-function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-            const result = reader.result;
-            const base64 = result.split(',')[1];
-            resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
+function fileToBase64(file, callback) {
+    var reader = new FileReader();
+    reader.onload = function() {
+        var result = reader.result;
+        var base64 = result.split(',')[1];
+        callback(base64);
+    };
+    reader.onerror = function() {
+        console.error('Error leyendo archivo');
+        callback(null);
+    };
+    reader.readAsDataURL(file);
 }
 
+// ===========================
+// HABILITAR DESHABILITAR CONTROLES
+// ===========================
 function enableControls() {
-    if (elements.btnWhiteBackground) elements.btnWhiteBackground.disabled = false;
-    if (elements.btnSmile) elements.btnSmile.disabled = false;
-    if (elements.btnVirtualTryOn) elements.btnVirtualTryOn.disabled = false;
+    console.log('🔓 Habilitando controles...');
+    
+    // Habilitar botones principales
+    if (elements.btnWhiteBackground) {
+        elements.btnWhiteBackground.disabled = false;
+        elements.btnWhiteBackground.style.opacity = '1';
+        console.log('✅ btnWhiteBackground habilitado');
+    }
+    
+    if (elements.btnSmile) {
+        elements.btnSmile.disabled = false;
+        elements.btnSmile.style.opacity = '1';
+        console.log('✅ btnSmile habilitado');
+    }
+    
+    if (elements.btnVirtualTryOn) {
+        elements.btnVirtualTryOn.disabled = false;
+        elements.btnVirtualTryOn.style.opacity = '1';
+        console.log('✅ btnVirtualTryOn habilitado');
+    }
+    
+    // ✅ HABILITAR BOTÓN VERDE DE DESCARGA - MÚLTIPLES ESTRATEGIAS
+    var allButtons = document.querySelectorAll('button');
+    for (var i = 0; i < allButtons.length; i++) {
+        var btn = allButtons[i];
+        var style = window.getComputedStyle(btn);
+        var bgColor = style.backgroundColor;
+        var color = style.color;
+        var textContent = btn.textContent || btn.innerText || '';
+        
+        // Si tiene color verde o contiene "descargar" en el texto
+        if ((bgColor && (bgColor.indexOf('rgb(40, 167, 69') !== -1 || bgColor.indexOf('rgb(34, 197, 94') !== -1)) ||
+            (color && (color.indexOf('rgb(40, 167, 69') !== -1 || color.indexOf('rgb(34, 197, 94') !== -1)) ||
+            (textContent && (textContent.toLowerCase().indexOf('descargar') !== -1 || 
+                           textContent.toLowerCase().indexOf('download') !== -1 ||
+                           textContent.toLowerCase().indexOf('guardar') !== -1 ||
+                           textContent.toLowerCase().indexOf('save') !== -1))) {
+            
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            btn.style.backgroundColor = '#28a745'; // Verde forzado
+            btn.style.color = 'white';
+            console.log('✅ Botón verde encontrado y habilitado:', textContent);
+        }
+    }
+    
+    // También habilitar elementos.btnDownload si existe
+    if (elements.btnDownload) {
+        elements.btnDownload.disabled = false;
+        elements.btnDownload.style.opacity = '1';
+        elements.btnDownload.style.backgroundColor = '#28a745'; // Verde forzado
+        elements.btnDownload.style.cursor = 'pointer';
+        console.log('✅ btnDownload habilitado');
+    }
+    
+    if (elements.btnRetry) {
+        elements.btnRetry.disabled = false;
+        elements.btnRetry.style.opacity = '1';
+        console.log('✅ btnRetry habilitado');
+    }
+    
+    console.log('🎯 Controles habilitados completados - ¡Botón verde listo para usar!');
 }
 
 function disableControls() {
-    if (elements.btnWhiteBackground) elements.btnWhiteBackground.disabled = true;
-    if (elements.btnSmile) elements.btnSmile.disabled = true;
-    if (elements.btnVirtualTryOn) elements.btnVirtualTryOn.disabled = true;
-    if (elements.btnDownload) elements.btnDownload.disabled = true;
-    if (elements.btnRetry) elements.btnRetry.disabled = true;
+    console.log('🔒 Deshabilitando controles...');
+    
+    if (elements.btnWhiteBackground) {
+        elements.btnWhiteBackground.disabled = true;
+        elements.btnWhiteBackground.style.opacity = '0.5';
+    }
+    if (elements.btnSmile) {
+        elements.btnSmile.disabled = true;
+        elements.btnSmile.style.opacity = '0.5';
+    }
+    if (elements.btnVirtualTryOn) {
+        elements.btnVirtualTryOn.disabled = true;
+        elements.btnVirtualTryOn.style.opacity = '0.5';
+    }
+    if (elements.btnDownload) {
+        elements.btnDownload.disabled = true;
+        elements.btnDownload.style.opacity = '0.5';
+    }
+    if (elements.btnRetry) {
+        elements.btnRetry.disabled = true;
+        elements.btnRetry.style.opacity = '0.5';
+    }
+    
+    console.log('🎯 Controles deshabilitados completados');
 }
 
 function resetEditor() {
@@ -885,10 +1088,18 @@ function resetEditor() {
     if (elements.personPreview) elements.personPreview.style.display = 'none';
     if (elements.garmentSection) elements.garmentSection.style.display = 'none';
     if (elements.originalImage) {
-        elements.originalImage.innerHTML = '<p class="placeholder">Selecciona una imagen para comenzar</p>';
+        elements.originalImage.innerHTML = '';
+        var placeholder1 = document.createElement('p');
+        placeholder1.className = 'placeholder';
+        placeholder1.textContent = 'Selecciona una imagen para comenzar';
+        elements.originalImage.appendChild(placeholder1);
     }
     if (elements.editedImage) {
-        elements.editedImage.innerHTML = '<p class="placeholder">Procesar imagen en modo ' + modeConfigs[currentMode].name + '</p>';
+        elements.editedImage.innerHTML = '';
+        var placeholder2 = document.createElement('p');
+        placeholder2.className = 'placeholder';
+        placeholder2.textContent = 'Procesar imagen en modo ' + modeConfigs[currentMode].name;
+        elements.editedImage.appendChild(placeholder2);
     }
     
     base64ImageData = null;
@@ -897,18 +1108,18 @@ function resetEditor() {
     console.log('🔄 Editor reiniciado');
 }
 
-async function downloadImage() {
+function downloadImage() {
     try {
         if (!elements.editedImage) return;
         
-        const editedImg = elements.editedImage.querySelector('img');
+        var editedImg = elements.editedImage.querySelector('img');
         if (!editedImg) {
             showError('No hay imagen para descargar');
             return;
         }
         
-        const link = document.createElement('a');
-        link.download = `imagen_${modeConfigs[currentMode].name.toLowerCase().replace(' ', '_')}_${Date.now()}.jpg`;
+        var link = document.createElement('a');
+        link.download = 'imagen_' + modeConfigs[currentMode].name.toLowerCase().replace(' ', '_') + '_' + Date.now() + '.jpg';
         link.href = editedImg.src;
         
         document.body.appendChild(link);
@@ -932,14 +1143,16 @@ function showLoader(show) {
     }
 }
 
-function showError(message, type = 'error') {
+function showError(message, type) {
+    type = type || 'error';
     if (elements.errorMessage) {
         elements.errorMessage.textContent = message;
         elements.errorMessage.className = type === 'success' ? 'success' : 'error';
         elements.errorMessage.style.display = 'block';
         
         if (type === 'success') {
-            setTimeout(() => {
+            // Usar setTimeout con función para evitar problemas de CSP
+            setTimeout(function() {
                 elements.errorMessage.style.display = 'none';
             }, 5000);
         }
