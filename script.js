@@ -1,17 +1,27 @@
 // ===========================
-// E-COMMERCE PHOTO EDITOR
-// JavaScript Application Logic - VERSIÓN CORREGIDA PARA EDICIÓN
+// EDITOR MULTIMODO: CATÁLOGO + INSTAGRAM REEL
+// Sistema inteligente de procesamiento según destino
 // ===========================
 
 // Configuration
 const CONFIG = {
     API_KEY: "AIzaSyBAuTlMG2kQWBIpaylzCUhGJopB2JcNh6I",
-    API_ENDPOINT: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent",
-    
-    SYSTEM_PROMPTS: {
-        standard: "Eres un editor de fotos profesional para e-commerce. Edita la imagen manteniendo a la persona intacta, solo modifica el fondo, formato o expresión. Asegúrate de que la imagen final tenga calidad profesional. Devuelve SOLO la imagen editada en formato base64 sin texto adicional.",
-        
-        virtualTryOn: "Eres un editor de fotos profesional especializado en virtual try-on. Combina la imagen de la persona con la prenda de manera realista. La prenda debe verse natural como si la persona realmente la estuviera usando. Devuelve SOLO la imagen combinada en formato base64 sin texto adicional."
+    API_ENDPOINT: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent"
+};
+
+// Modes Configuration
+const MODES = {
+    CATALOG: {
+        name: 'Catálogo Web',
+        width: 500,
+        height: 500,
+        description: 'Productos e-commerce - Cuadrado 500x500px'
+    },
+    INSTAGRAM: {
+        name: 'Instagram Reel',
+        width: 1080,
+        height: 1920,
+        description: 'Reels verticales - 1080x1920px'
     }
 };
 
@@ -19,6 +29,7 @@ const CONFIG = {
 let base64ImageData = null;
 let base64GarmentData = null;
 let lastApiCall = null;
+let currentMode = 'CATALOG'; // CATALOG or INSTAGRAM
 
 // DOM Elements
 const elements = {
@@ -38,12 +49,11 @@ const elements = {
     btnVirtualTryOn: document.getElementById('btn-virtual-try-on'),
     btnDownload: document.getElementById('btn-download'),
     btnRetry: document.getElementById('btn-retry'),
-    canvaPanel: document.getElementById('canvaPanel'),
-    canvaStatus: document.getElementById('canvaStatus'),
-    canvaIndicator: document.getElementById('canvaIndicator'),
-    canvaStatusText: document.getElementById('canvaStatusText'),
-    btnCanvaConnect: document.getElementById('btnCanvaConnect'),
-    btnCanvaDisconnect: document.getElementById('btnCanvaDisconnect'),
+    // NEW MODE SELECTOR
+    modeSelector: document.getElementById('modeSelector'),
+    catalogMode: document.getElementById('catalogMode'),
+    instagramMode: document.getElementById('instagramMode'),
+    currentModeDisplay: document.getElementById('currentModeDisplay'),
     loader: document.getElementById('loader'),
     apiNotice: document.getElementById('apiNotice')
 };
@@ -55,41 +65,505 @@ const elements = {
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupEventListeners();
-    showApiNotice();
-    console.log('🚀 Editor inicializado - Versión EDICIÓN');
+    console.log('🚀 Editor MULTIMODO: Catálogo + Instagram Reel');
 });
 
 function initializeApp() {
-    console.log('🚀 Editor de fotos inicializado correctamente');
+    console.log('🚀 Editor MULTIMODO inicializado');
+    console.log('✅ Modo Catálogo: 500x500px cuadrado');
+    console.log('✅ Modo Instagram: 1080x1920px vertical');
+    console.log('✅ Expansión inteligente en modo catálogo');
+    console.log('✅ Recorte inteligente en ambos modos');
     
-    if (CONFIG.API_KEY === "TU_API_KEY_AQUI") {
-        console.warn('⚠️ API Key no configurada');
-    } else {
-        console.log('✅ API Key configurada correctamente');
-        console.log('✅ Google AI Imagen API: Habilitada - MODELO DE EDICIÓN');
-    }
+    updateModeDisplay();
 }
 
 function setupEventListeners() {
+    // Image uploads
     elements.imageUpload.addEventListener('change', handlePersonImageUpload);
     elements.garmentUpload.addEventListener('change', handleGarmentImageUpload);
     
+    // Mode selector
+    elements.catalogMode.addEventListener('click', () => setMode('CATALOG'));
+    elements.instagramMode.addEventListener('click', () => setMode('INSTAGRAM'));
+    
+    // Editing buttons
     elements.btnWhiteBg.addEventListener('click', function() {
-        standardTask('Cambiar el fondo a blanco profesional, mantener a la persona intacta');
+        smartProcessTask('Cambiar el fondo a blanco profesional, mantener a la persona intacta');
     });
     elements.btnSquareFormat.addEventListener('click', function() {
-        standardTask('Cambiar formato a cuadrado 1:1, ajustar composición manteniendo la persona centrada');
+        smartProcessTask('Cambiar formato según destino, ajustar composición manteniendo la persona centrada');
     });
     elements.btnSmile.addEventListener('click', function() {
-        standardTask('Mejorar la expresión de la persona para que se vea más sonriente y amigable');
+        smartProcessTask('Mejorar la expresión de la persona para que se vea más sonriente y amigable');
     });
-    elements.btnVirtualTryOn.addEventListener('click', virtualTryOnTask);
+    elements.btnVirtualTryOn.addEventListener('click', smartVirtualTryOn);
     
+    // Action buttons
     elements.btnDownload.addEventListener('click', downloadImage);
     elements.btnRetry.addEventListener('click', retryLastTask);
     
-    console.log('✅ Event listeners configurados correctamente');
-    console.log('✅ Modo: Upload local de imágenes - CON GEMINI 2.5 FLASH IMAGE');
+    console.log('✅ Event listeners configurados');
+}
+
+// ===========================
+// MODE MANAGEMENT
+// ===========================
+
+function setMode(mode) {
+    currentMode = mode;
+    updateModeDisplay();
+    
+    const modeConfig = MODES[mode];
+    console.log('🎯 Modo cambiado a: ' + modeConfig.name);
+    console.log('🎯 Dimensiones: ' + modeConfig.width + 'x' + modeConfig.height + 'px');
+    console.log('🎯 Descripción: ' + modeConfig.description);
+    
+    showError('Modo cambiado a: ' + modeConfig.name, 'info');
+}
+
+function updateModeDisplay() {
+    const modeConfig = MODES[currentMode];
+    
+    // Update display text
+    elements.currentModeDisplay.textContent = `${modeConfig.name} (${modeConfig.width}x${modeConfig.height})`;
+    
+    // Update button states
+    elements.catalogMode.classList.toggle('active', currentMode === 'CATALOG');
+    elements.instagramMode.classList.toggle('active', currentMode === 'INSTAGRAM');
+}
+
+// ===========================
+// SMART PROCESSING FUNCTIONS
+// ===========================
+
+function smartProcessTask(promptText) {
+    if (!base64ImageData) {
+        showError('Primero debes cargar una imagen de persona');
+        return;
+    }
+    
+    lastApiCall = { type: 'standard', prompt: promptText };
+    
+    const modeConfig = MODES[currentMode];
+    
+    console.log('🎯 Iniciando procesamiento INTELIGENTE');
+    console.log('🎯 Modo: ' + modeConfig.name);
+    console.log('🎯 Prompt: ' + promptText);
+    
+    showLoader(true);
+    
+    // Analyze image orientation to determine strategy
+    analyzeImageOrientation(base64ImageData)
+        .then(orientation => {
+            console.log('📊 Orientación detectada: ' + orientation);
+            return smartProcess(orientation, promptText, base64ImageData);
+        })
+        .then(finalResultUrl => {
+            if (finalResultUrl) {
+                elements.editedImage.innerHTML = '<img src="' + finalResultUrl + '" alt="Imagen procesada">';
+                
+                elements.btnDownload.disabled = false;
+                elements.btnRetry.disabled = false;
+                
+                console.log('✅ Procesamiento inteligente completado');
+                showError(`✅ Imagen procesada en modo ${modeConfig.name}`, 'success');
+            } else {
+                showError('Error en el procesamiento inteligente');
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error en procesamiento inteligente:', error);
+            showError('Error: ' + error.message);
+        })
+        .finally(() => {
+            showLoader(false);
+        });
+}
+
+function smartVirtualTryOn() {
+    if (!base64ImageData) {
+        showError('Primero debes cargar una imagen de persona');
+        return;
+    }
+    
+    if (!base64GarmentData) {
+        showError('Primero debes cargar una imagen de prenda');
+        return;
+    }
+    
+    lastApiCall = { type: 'virtual-try-on', prompt: 'virtual try-on' };
+    
+    const modeConfig = MODES[currentMode];
+    
+    console.log('🎯 Iniciando Virtual Try-On INTELIGENTE');
+    console.log('🎯 Modo: ' + modeConfig.name);
+    
+    showLoader(true);
+    
+    // Analyze image orientation to determine strategy
+    analyzeImageOrientation(base64ImageData)
+        .then(orientation => {
+            console.log('📊 Orientación detectada: ' + orientation);
+            return smartVirtualTryOnProcess(orientation);
+        })
+        .then(finalResultUrl => {
+            if (finalResultUrl) {
+                elements.editedImage.innerHTML = '<img src="' + finalResultUrl + '" alt="Virtual try-on procesado">';
+                
+                elements.btnDownload.disabled = false;
+                elements.btnRetry.disabled = false;
+                
+                console.log('✅ Virtual try-on inteligente completado');
+                showError(`✅ Virtual try-on en modo ${modeConfig.name}`, 'success');
+            } else {
+                showError('Error en el virtual try-on inteligente');
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error en virtual try-on inteligente:', error);
+            showError('Error: ' + error.message);
+        })
+        .finally(() => {
+            showLoader(false);
+        });
+}
+
+// ===========================
+// INTELLIGENT PROCESSING LOGIC
+// ===========================
+
+async function analyzeImageOrientation(imageBase64) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.src = 'data:image/jpeg;base64,' + imageBase64;
+        
+        img.onload = function() {
+            const width = img.width;
+            const height = img.height;
+            const ratio = width / height;
+            
+            let orientation;
+            if (ratio > 1.2) {
+                orientation = 'horizontal';
+            } else if (ratio < 0.8) {
+                orientation = 'vertical';
+            } else {
+                orientation = 'square';
+            }
+            
+            resolve(orientation);
+        };
+        
+        img.onerror = function() {
+            // Default to square if can't determine
+            resolve('square');
+        };
+    });
+}
+
+async function smartProcess(orientation, promptText, imageBase64) {
+    const modeConfig = MODES[currentMode];
+    
+    try {
+        if (currentMode === 'CATALOG') {
+            return await catalogProcessing(orientation, promptText, imageBase64);
+        } else {
+            return await instagramProcessing(orientation, promptText, imageBase64);
+        }
+    } catch (error) {
+        console.error('Error en procesamiento inteligente:', error);
+        throw error;
+    }
+}
+
+async function catalogProcessing(orientation, promptText, imageBase64) {
+    const modeConfig = MODES.CATALOG;
+    
+    console.log('🛍️ Procesamiento CATÁLOGO (500x500px)');
+    
+    if (orientation === 'vertical') {
+        // MODO CATÁLOGO + IMAGEN VERTICAL = EXPANSIÓN INTELIGENTE
+        console.log('🔧 Estrategia: EXPANSIÓN - Rellenar espacios faltantes');
+        
+        // IA expande la imagen para crear contenido en los espacios faltantes
+        const expandedPrompt = promptText + ' + EXPANSIÓN INTELIGENTE: Rellena los espacios faltantes para completar formato cuadrado 500x500px, manteniendo continuidad natural con la imagen original.';
+        
+        return await processWithAI(expandedPrompt, imageBase64)
+            .then(aiResult => {
+                // Asegurar dimensiones exactas después de expansión
+                return smartCropToDimensions(aiResult, modeConfig.width, modeConfig.height);
+            });
+            
+    } else if (orientation === 'square') {
+        // MODO CATÁLOGO + IMAGEN CUADRADA = MANTENER + AJUSTAR
+        console.log('🔧 Estrategia: MANTENER - Imagen ya está en formato correcto');
+        
+        const adjustedPrompt = promptText + ' + FORMATO: Mantener proporciones cuadradas para catálogo e-commerce 500x500px.';
+        
+        return await processWithAI(adjustedPrompt, imageBase64)
+            .then(aiResult => {
+                return smartCropToDimensions(aiResult, modeConfig.width, modeConfig.height);
+            });
+            
+    } else {
+        // MODO CATÁLOGO + IMAGEN HORIZONTAL = RECORTE INTELIGENTE
+        console.log('🔧 Estrategia: RECORTE - Centrar y recortar para cuadrado');
+        
+        const croppedPrompt = promptText + ' + COMPOSICIÓN: Ajustar para formato cuadrado 500x500px, manteniendo la persona centrada.';
+        
+        return await processWithAI(croppedPrompt, imageBase64)
+            .then(aiResult => {
+                return smartCropToDimensions(aiResult, modeConfig.width, modeConfig.height);
+            });
+    }
+}
+
+async function instagramProcessing(orientation, promptText, imageBase64) {
+    const modeConfig = MODES.INSTAGRAM;
+    
+    console.log('📱 Procesamiento INSTAGRAM REEL (1080x1920px)');
+    
+    if (orientation === 'vertical') {
+        // MODO INSTAGRAM + IMAGEN VERTICAL = MANTENER + AJUSTAR
+        console.log('🔧 Estrategia: MANTENER - Imagen ya tiene orientación correcta');
+        
+        const adjustedPrompt = promptText + ' + FORMATO: Optimizar para Instagram Reel vertical 1080x1920px, mantener calidad y centrado.';
+        
+        return await processWithAI(adjustedPrompt, imageBase64)
+            .then(aiResult => {
+                return smartCropToDimensions(aiResult, modeConfig.width, modeConfig.height);
+            });
+            
+    } else if (orientation === 'square') {
+        // MODO INSTAGRAM + IMAGEN CUADRADA = RECORTE PARA VERTICAL
+        console.log('🔧 Estrategia: RECORTE - Convertir cuadrado a vertical');
+        
+        const verticalPrompt = promptText + ' + FORMATO: Convertir a vertical 1080x1920px para Instagram Reel, mantener contenido principal centrado.';
+        
+        return await processWithAI(verticalPrompt, imageBase64)
+            .then(aiResult => {
+                return smartCropToDimensions(aiResult, modeConfig.width, modeConfig.height);
+            });
+            
+    } else {
+        // MODO INSTAGRAM + IMAGEN HORIZONTAL = RECORTE PARA VERTICAL
+        console.log('🔧 Estrategia: RECORTE - Convertir horizontal a vertical');
+        
+        const verticalPrompt = promptText + ' + FORMATO: Convertir a vertical 1080x1920px para Instagram Reel, preservar elemento principal.';
+        
+        return await processWithAI(verticalPrompt, imageBase64)
+            .then(aiResult => {
+                return smartCropToDimensions(aiResult, modeConfig.width, modeConfig.height);
+            });
+    }
+}
+
+async function smartVirtualTryOnProcess(orientation) {
+    const modeConfig = MODES[currentMode];
+    
+    console.log('👕 Virtual Try-On Inteligente - Modo: ' + modeConfig.name);
+    
+    const virtualPrompt = 'Combina esta prenda con la persona de manera realista, la prenda debe verse natural como si la persona realmente la estuviera usando. Virtual try-on profesional.';
+    
+    return await processVirtualTryOnWithAI(virtualPrompt)
+        .then(aiResult => {
+            return smartCropToDimensions(aiResult, modeConfig.width, modeConfig.height);
+        });
+}
+
+// ===========================
+// AI PROCESSING FUNCTIONS
+// ===========================
+
+async function processWithAI(promptText, imageBase64) {
+    const payload = {
+        contents: [{
+            parts: [
+                { text: promptText },
+                {
+                    inline_data: {
+                        mime_type: "image/jpeg",
+                        data: imageBase64
+                    }
+                }
+            ]
+        }],
+        generation_config: {
+            temperature: 0.1,
+            max_output_tokens: 8192
+        }
+    };
+    
+    return await callApiAndExtractImage(payload);
+}
+
+async function processVirtualTryOnWithAI(promptText) {
+    const payload = {
+        contents: [{
+            parts: [
+                { text: promptText },
+                {
+                    inline_data: {
+                        mime_type: "image/jpeg",
+                        data: base64ImageData
+                    }
+                },
+                { text: ' y ' },
+                {
+                    inline_data: {
+                        mime_type: "image/jpeg",
+                        data: base64GarmentData
+                    }
+                }
+            ]
+        }],
+        generation_config: {
+            temperature: 0.1,
+            max_output_tokens: 8192
+        }
+    };
+    
+    return await callApiAndExtractImage(payload);
+}
+
+async function callApiAndExtractImage(payload) {
+    try {
+        console.log('📡 Enviando a IA...');
+        
+        const response = await fetchWithBackoff(CONFIG.API_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': CONFIG.API_KEY,
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) {
+            throw new Error('Error ' + response.status + ': ' + response.statusText);
+        }
+        
+        const data = await response.json();
+        console.log('📨 Respuesta de IA recibida');
+        
+        const imageBase64 = extractImageFromResponse(data);
+        
+        if (!imageBase64) {
+            throw new Error('La IA no devolvió una imagen válida');
+        }
+        
+        console.log('✅ Imagen extraída de respuesta de IA');
+        return imageBase64;
+        
+    } catch (error) {
+        console.error('❌ Error en API:', error);
+        throw error;
+    }
+}
+
+async function fetchWithBackoff(url, options, maxRetries) {
+    if (!maxRetries) {
+        maxRetries = 3;
+    }
+    
+    for (let i = 0; i <= maxRetries; i++) {
+        try {
+            const response = await fetch(url, options);
+            return response;
+        } catch (error) {
+            if (i === maxRetries) throw error;
+            
+            const delay = Math.pow(2, i) * 1000;
+            console.log('Reintentando en ' + delay + 'ms... (' + (i + 1) + '/' + maxRetries + ')');
+            await new Promise(function(resolve) {
+                setTimeout(resolve, delay);
+            });
+        }
+    }
+}
+
+// ===========================
+// IMAGE EXTRACTION
+// ===========================
+
+function extractImageFromResponse(data) {
+    try {
+        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+            const parts = data.candidates[0].content.parts;
+            
+            if (parts && Array.isArray(parts)) {
+                for (let i = 0; i < parts.length; i++) {
+                    const part = parts[i];
+                    
+                    // Buscar en inline_data
+                    if (part.inline_data && part.inline_data.data) {
+                        return part.inline_data.data;
+                    }
+                    
+                    // Buscar en texto (data:image)
+                    if (part.text) {
+                        const match = part.text.match(/data:image\/[a-z]+;base64,([a-zA-Z0-9+\/=]+)/);
+                        if (match) {
+                            return match[1];
+                        }
+                    }
+                }
+            }
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Error extrayendo imagen:', error);
+        return null;
+    }
+}
+
+// ===========================
+// SMART DIMENSIONAL PROCESSING
+// ===========================
+
+function smartCropToDimensions(imageBase64, targetWidth, targetHeight) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.src = 'data:image/jpeg;base64,' + imageBase64;
+        
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set target dimensions
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            
+            const imgWidth = img.width;
+            const imgHeight = img.height;
+            
+            // Calculate scaling and cropping
+            const scaleX = targetWidth / imgWidth;
+            const scaleY = targetHeight / imgHeight;
+            const scale = Math.max(scaleX, scaleY); // Scale to fill completely
+            
+            const scaledWidth = imgWidth * scale;
+            const scaledHeight = imgHeight * scale;
+            
+            // Calculate position to center the image
+            const offsetX = (targetWidth - scaledWidth) / 2;
+            const offsetY = (targetHeight - scaledHeight) / 2;
+            
+            // Draw the image scaled and centered
+            ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
+            
+            const resultUrl = canvas.toDataURL('image/jpeg', 0.9);
+            console.log('✅ Procesamiento completado: ' + targetWidth + 'x' + targetHeight + 'px');
+            resolve(resultUrl);
+        };
+        
+        img.onerror = function() {
+            console.error('❌ Error cargando imagen para procesamiento');
+            resolve(null);
+        };
+    });
 }
 
 // ===========================
@@ -161,230 +635,6 @@ async function handleGarmentImageUpload(event) {
 }
 
 // ===========================
-// TOOL FUNCTIONS
-// ===========================
-
-function standardTask(promptText) {
-    if (!base64ImageData) {
-        showError('Primero debes cargar una imagen de persona');
-        return;
-    }
-    
-    lastApiCall = { type: 'standard', prompt: promptText };
-    
-    const payload = {
-        contents: [{
-            parts: [
-                { text: promptText },
-                {
-                    inline_data: {
-                        mime_type: "image/jpeg",
-                        data: base64ImageData
-                    }
-                }
-            ]
-        }],
-        generation_config: {
-            temperature: 0.1,
-            max_output_tokens: 8192
-        }
-    };
-    
-    console.log('🎯 Iniciando edición: ' + promptText);
-    console.log('🎯 Usando modelo: gemini-2.5-flash-image-preview');
-    callApi(payload);
-}
-
-function virtualTryOnTask() {
-    if (!base64ImageData) {
-        showError('Primero debes cargar una imagen de persona');
-        return;
-    }
-    
-    if (!base64GarmentData) {
-        showError('Primero debes cargar una imagen de prenda');
-        return;
-    }
-    
-    lastApiCall = { type: 'virtual-try-on', prompt: 'combinar esta prenda con la persona' };
-    
-    const payload = {
-        contents: [{
-            parts: [
-                { text: 'Combina esta prenda con la persona de manera realista, la prenda debe verse natural como si la persona realmente la estuviera usando. Virtual try-on profesional.' },
-                {
-                    inline_data: {
-                        mime_type: "image/jpeg",
-                        data: base64ImageData
-                    }
-                },
-                { text: ' y ' },
-                {
-                    inline_data: {
-                        mime_type: "image/jpeg",
-                        data: base64GarmentData
-                    }
-                }
-            ]
-        }],
-        generation_config: {
-            temperature: 0.1,
-            max_output_tokens: 8192
-        }
-    };
-    
-    console.log('🎯 Iniciando virtual try-on');
-    console.log('🎯 Usando modelo: gemini-2.5-flash-image-preview');
-    callApi(payload);
-}
-
-// ===========================
-// API COMMUNICATION
-// ===========================
-
-async function callApi(payload) {
-    console.log('🚀 Iniciando edición con Gemini 2.5 Flash Image...');
-    showLoader(true);
-    
-    try {
-        if (CONFIG.API_KEY === "TU_API_KEY_AQUI") {
-            showError('API Key no configurada');
-            showLoader(false);
-            return;
-        }
-        
-        console.log('📡 Enviando solicitud a Gemini Imagen...');
-        console.log('📡 Endpoint: ' + CONFIG.API_ENDPOINT);
-        
-        const response = await fetchWithBackoff(CONFIG.API_ENDPOINT, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-goog-api-key': CONFIG.API_KEY,
-            },
-            body: JSON.stringify(payload)
-        });
-        
-        if (!response.ok) {
-            throw new Error('Error ' + response.status + ': ' + response.statusText);
-        }
-        
-        const data = await response.json();
-        console.log('📨 Respuesta recibida de Gemini Imagen:', data);
-        
-        const imageBase64 = extractImageFromResponse(data);
-        
-        if (imageBase64) {
-            const editedDataUrl = 'data:image/jpeg;base64,' + imageBase64;
-            elements.editedImage.innerHTML = '<img src="' + editedDataUrl + '" alt="Imagen editada">';
-            
-            elements.btnDownload.disabled = false;
-            elements.btnRetry.disabled = false;
-            
-            console.log('✅ Imagen editada exitosamente');
-            showError('✅ Imagen editada exitosamente con IA', 'success');
-        } else {
-            console.error('❌ No se pudo extraer imagen de la respuesta');
-            console.log('📋 Respuesta completa:', JSON.stringify(data, null, 2));
-            showError('La API no devolvió una imagen válida');
-        }
-        
-    } catch (error) {
-        console.error('❌ Error en API:', error);
-        showError('Error de conexión: ' + error.message);
-    } finally {
-        showLoader(false);
-    }
-}
-
-async function fetchWithBackoff(url, options, maxRetries) {
-    if (!maxRetries) {
-        maxRetries = 3;
-    }
-    
-    for (let i = 0; i <= maxRetries; i++) {
-        try {
-            const response = await fetch(url, options);
-            return response;
-        } catch (error) {
-            if (i === maxRetries) throw error;
-            
-            const delay = Math.pow(2, i) * 1000;
-            console.log('Reintentando en ' + delay + 'ms... (' + (i + 1) + '/' + maxRetries + ')');
-            await new Promise(function(resolve) {
-                setTimeout(resolve, delay);
-            });
-        }
-    }
-}
-
-// ===========================
-// RESPONSE PROCESSING
-// ===========================
-
-function extractImageFromResponse(data) {
-    try {
-        console.log('🔍 Analizando respuesta de Gemini Imagen:', data);
-        
-        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-            const parts = data.candidates[0].content.parts;
-            
-            if (!parts || !Array.isArray(parts)) {
-                console.log('⚠️ No hay parts válidas en la respuesta');
-                console.log('🔍 Estructura de respuesta:', JSON.stringify(data, null, 2));
-                return null;
-            }
-            
-            console.log('📋 Parts encontradas:', parts.length);
-            
-            for (let i = 0; i < parts.length; i++) {
-                const part = parts[i];
-                console.log(`🔍 Analizando part ${i}:`, part);
-                
-                // Buscar imagen en inline_data
-                if (part.inline_data && part.inline_data.data) {
-                    console.log('✅ Imagen encontrada en inline_data');
-                    console.log('🔍 Tipo MIME:', part.inline_data.mime_type);
-                    console.log('🔍 Tamaño de datos:', part.inline_data.data.length);
-                    return part.inline_data.data;
-                }
-                
-                // Buscar imagen en texto (formato data:image)
-                if (part.text && part.text.indexOf('data:image') !== -1) {
-                    const match = part.text.match(/data:image\/[a-z]+;base64,([a-zA-Z0-9+\/=]+)/);
-                    if (match) {
-                        console.log('✅ Imagen encontrada en texto');
-                        return match[1];
-                    }
-                }
-                
-                // Log para debug
-                if (part.text) {
-                    console.log(`📝 Texto en part ${i}:`, part.text.substring(0, 200));
-                }
-            }
-        }
-        
-        // Información adicional para debug
-        if (data.candidates) {
-            console.log('📋 Candidates disponibles:', data.candidates.length);
-            if (data.candidates[0]) {
-                console.log('📋 First candidate finish reason:', data.candidates[0].finishReason);
-                if (data.candidates[0].safetyRatings) {
-                    console.log('📋 Safety ratings:', data.candidates[0].safetyRatings);
-                }
-            }
-        }
-        
-        console.log('❌ No se encontró imagen en la respuesta');
-        return null;
-    } catch (error) {
-        console.error('❌ Error extrayendo imagen:', error);
-        return null;
-    }
-}
-
-// ===========================
 // ACTION FUNCTIONS
 // ===========================
 
@@ -393,32 +643,16 @@ function downloadImage() {
     if (!img) return;
     
     try {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+        const modeConfig = MODES[currentMode];
+        const a = document.createElement('a');
+        a.href = img.src;
+        a.download = `imagen-${currentMode.toLowerCase()}-${Date.now()}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
         
-        const image = new Image();
-        image.onload = function() {
-            canvas.width = image.width;
-            canvas.height = image.height;
-            ctx.drawImage(image, 0, 0);
-            
-            canvas.toBlob(function(blob) {
-                if (blob) {
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'imagen-editada-' + Date.now() + '.jpg';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    
-                    console.log('✅ Imagen descargada');
-                    showError('Imagen descargada exitosamente', 'success');
-                }
-            }, 'image/jpeg', 0.9);
-        };
-        image.src = img.src;
+        console.log('✅ Imagen descargada en modo: ' + modeConfig.name);
+        showError('Imagen descargada exitosamente', 'success');
         
     } catch (error) {
         console.error('Error descargando imagen:', error);
@@ -435,9 +669,9 @@ function retryLastTask() {
     console.log('🔄 Reintentando última tarea:', lastApiCall);
     
     if (lastApiCall.type === 'standard') {
-        standardTask(lastApiCall.prompt);
+        smartProcessTask(lastApiCall.prompt);
     } else if (lastApiCall.type === 'virtual-try-on') {
-        virtualTryOnTask();
+        smartVirtualTryOn();
     }
 }
 
@@ -460,107 +694,34 @@ function showError(message, type) {
     
     const typeConfig = {
         error: {
-            background: '#DC3545',
-            icon: '<circle cx=\'12\' cy=\'12\' r=\'10\'/><line x1=\'15\' y1=\'9\' x2=\'9\' y2=\'15\'/><line x1=\'9\' y1=\'9\' x2=\'15\' y2=\'15\'/>'
+            background: '#DC3545'
         },
         success: {
-            background: '#198754',
-            icon: '<polyline points=\'20,6 9,17 4,12\'/>'
+            background: '#198754'
         },
         info: {
-            background: '#0DCAF0',
-            icon: '<circle cx=\'12\' cy=\'12\' r=\'10\'/><line x1=\'12\' y1=\'16\' x2=\'12\' y2=\'12\'/><line x1=\'12\' y1=\'8\' x2=\'12.01\' y2=\'8\'/>'
+            background: '#0DCAF0'
         }
     };
     
     const config = typeConfig[type] || typeConfig.error;
     
     const notificationDiv = document.createElement('div');
-    notificationDiv.className = 'notification';
+    notificationDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${config.background};
+        color: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        z-index: 10000;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    `;
     
-    // Crear SVG sin innerHTML
-    const svgNS = 'http://www.w3.org/2000/svg';
-    const svgElement = document.createElementNS(svgNS, 'svg');
-    svgElement.setAttribute('width', '20');
-    svgElement.setAttribute('height', '20');
-    svgElement.setAttribute('viewBox', '0 0 24 24');
-    svgElement.setAttribute('fill', 'none');
-    svgElement.setAttribute('stroke', 'currentColor');
-    svgElement.setAttribute('stroke-width', '2');
-    
-    // Crear elementos del SVG según el tipo
-    if (config.icon.includes('circle') && config.icon.includes('polyline')) {
-        const circle = document.createElementNS(svgNS, 'polyline');
-        circle.setAttribute('points', '20,6 9,17 4,12');
-        svgElement.appendChild(circle);
-    } else if (config.icon.includes('circle') && config.icon.includes('line')) {
-        const circle = document.createElementNS(svgNS, 'circle');
-        circle.setAttribute('cx', '12');
-        circle.setAttribute('cy', '12');
-        circle.setAttribute('r', '10');
-        svgElement.appendChild(circle);
-        
-        const line1 = document.createElementNS(svgNS, 'line');
-        line1.setAttribute('x1', '15');
-        line1.setAttribute('y1', '9');
-        line1.setAttribute('x2', '9');
-        line1.setAttribute('y2', '15');
-        svgElement.appendChild(line1);
-        
-        const line2 = document.createElementNS(svgNS, 'line');
-        line2.setAttribute('x1', '9');
-        line2.setAttribute('y1', '9');
-        line2.setAttribute('x2', '15');
-        line2.setAttribute('y2', '15');
-        svgElement.appendChild(line2);
-    } else if (config.icon.includes('line') && config.icon.includes('12.01')) {
-        const circle = document.createElementNS(svgNS, 'circle');
-        circle.setAttribute('cx', '12');
-        circle.setAttribute('cy', '12');
-        circle.setAttribute('r', '10');
-        svgElement.appendChild(circle);
-        
-        const line1 = document.createElementNS(svgNS, 'line');
-        line1.setAttribute('x1', '12');
-        line1.setAttribute('y1', '16');
-        line1.setAttribute('x2', '12');
-        line1.setAttribute('y2', '12');
-        svgElement.appendChild(line1);
-        
-        const line2 = document.createElementNS(svgNS, 'line');
-        line2.setAttribute('x1', '12');
-        line2.setAttribute('y1', '8');
-        line2.setAttribute('x2', '12.01');
-        line2.setAttribute('y2', '8');
-        svgElement.appendChild(line2);
-    }
-    
-    // Crear span para el mensaje
-    const messageSpan = document.createElement('span');
-    messageSpan.textContent = message;
-    
-    // Agregar elementos al div
-    notificationDiv.appendChild(svgElement);
-    notificationDiv.appendChild(messageSpan);
-    
-    Object.assign(notificationDiv.style, {
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        background: config.background,
-        color: 'white',
-        padding: '12px 16px',
-        borderRadius: '8px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        zIndex: '10000',
-        maxWidth: '400px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        fontSize: '14px',
-        fontWeight: '500'
-    });
-    
+    notificationDiv.textContent = message;
     document.body.appendChild(notificationDiv);
     
     const timeout = type === 'error' ? 5000 : 3000;
@@ -569,14 +730,6 @@ function showError(message, type) {
             notificationDiv.parentNode.removeChild(notificationDiv);
         }
     }, timeout);
-}
-
-function showApiNotice() {
-    if (CONFIG.API_KEY === "TU_API_KEY_AQUI") {
-        elements.apiNotice.style.display = 'flex';
-    } else {
-        elements.apiNotice.style.display = 'none';
-    }
 }
 
 // ===========================
@@ -598,4 +751,4 @@ function fileToBase64(file) {
     });
 }
 
-console.log('🎨 Editor de Fotos E-commerce - MODELO DE EDICIÓN GEMINI 2.5 FLASH IMAGE');
+console.log('🚀 EDITOR MULTIMODO: Catálogo + Instagram Reel - Versión Completa');
