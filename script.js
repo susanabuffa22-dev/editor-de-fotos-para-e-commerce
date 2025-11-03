@@ -1,12 +1,12 @@
 // ===========================
 // E-COMMERCE PHOTO EDITOR
-// JavaScript Application Logic - VERSIÓN ESTABLE
+// JavaScript Application Logic - VERSIÓN CORREGIDA PARA EDICIÓN
 // ===========================
 
 // Configuration
 const CONFIG = {
     API_KEY: "AIzaSyBAuTlMG2kQWBIpaylzCUhGJopB2JcNh6I",
-    API_ENDPOINT: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+    API_ENDPOINT: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent",
     
     SYSTEM_PROMPTS: {
         standard: "Eres un editor de fotos profesional para e-commerce. Edita la imagen manteniendo a la persona intacta, solo modifica el fondo, formato o expresión. Asegúrate de que la imagen final tenga calidad profesional. Devuelve SOLO la imagen editada en formato base64 sin texto adicional.",
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupEventListeners();
     showApiNotice();
-    console.log('🚀 Editor inicializado - Versión Estable');
+    console.log('🚀 Editor inicializado - Versión EDICIÓN');
 });
 
 function initializeApp() {
@@ -66,7 +66,7 @@ function initializeApp() {
         console.warn('⚠️ API Key no configurada');
     } else {
         console.log('✅ API Key configurada correctamente');
-        console.log('✅ Google AI API: Habilitada');
+        console.log('✅ Google AI Imagen API: Habilitada - MODELO DE EDICIÓN');
     }
 }
 
@@ -75,13 +75,13 @@ function setupEventListeners() {
     elements.garmentUpload.addEventListener('change', handleGarmentImageUpload);
     
     elements.btnWhiteBg.addEventListener('click', function() {
-        standardTask('fondo blanco');
+        standardTask('Cambiar el fondo a blanco profesional, mantener a la persona intacta');
     });
     elements.btnSquareFormat.addEventListener('click', function() {
-        standardTask('formato cuadrado');
+        standardTask('Cambiar formato a cuadrado 1:1, ajustar composición manteniendo la persona centrada');
     });
     elements.btnSmile.addEventListener('click', function() {
-        standardTask('hacer sonreír');
+        standardTask('Mejorar la expresión de la persona para que se vea más sonriente y amigable');
     });
     elements.btnVirtualTryOn.addEventListener('click', virtualTryOnTask);
     
@@ -89,7 +89,7 @@ function setupEventListeners() {
     elements.btnRetry.addEventListener('click', retryLastTask);
     
     console.log('✅ Event listeners configurados correctamente');
-    console.log('✅ Modo: Upload local de imágenes - SIN Firebase Storage');
+    console.log('✅ Modo: Upload local de imágenes - CON GEMINI 2.5 FLASH IMAGE');
 }
 
 // ===========================
@@ -190,7 +190,8 @@ function standardTask(promptText) {
         }
     };
     
-    console.log('🎯 Iniciando tarea: ' + promptText);
+    console.log('🎯 Iniciando edición: ' + promptText);
+    console.log('🎯 Usando modelo: gemini-2.5-flash-image-preview');
     callApi(payload);
 }
 
@@ -205,12 +206,12 @@ function virtualTryOnTask() {
         return;
     }
     
-    lastApiCall = { type: 'virtual-try-on', prompt: 'virtual try-on' };
+    lastApiCall = { type: 'virtual-try-on', prompt: 'combinar esta prenda con la persona' };
     
     const payload = {
         contents: [{
             parts: [
-                { text: 'virtual try-on' },
+                { text: 'Combina esta prenda con la persona de manera realista, la prenda debe verse natural como si la persona realmente la estuviera usando. Virtual try-on profesional.' },
                 {
                     inline_data: {
                         mime_type: "image/jpeg",
@@ -232,7 +233,8 @@ function virtualTryOnTask() {
         }
     };
     
-    console.log('🎯 Iniciando tarea: virtual try-on');
+    console.log('🎯 Iniciando virtual try-on');
+    console.log('🎯 Usando modelo: gemini-2.5-flash-image-preview');
     callApi(payload);
 }
 
@@ -241,7 +243,7 @@ function virtualTryOnTask() {
 // ===========================
 
 async function callApi(payload) {
-    console.log('🚀 Iniciando edición con Google AI...');
+    console.log('🚀 Iniciando edición con Gemini 2.5 Flash Image...');
     showLoader(true);
     
     try {
@@ -251,7 +253,8 @@ async function callApi(payload) {
             return;
         }
         
-        console.log('📡 Enviando solicitud a Google AI...');
+        console.log('📡 Enviando solicitud a Gemini Imagen...');
+        console.log('📡 Endpoint: ' + CONFIG.API_ENDPOINT);
         
         const response = await fetchWithBackoff(CONFIG.API_ENDPOINT, {
             method: 'POST',
@@ -267,7 +270,7 @@ async function callApi(payload) {
         }
         
         const data = await response.json();
-        console.log('📨 Respuesta recibida de Google AI:', data);
+        console.log('📨 Respuesta recibida de Gemini Imagen:', data);
         
         const imageBase64 = extractImageFromResponse(data);
         
@@ -278,11 +281,12 @@ async function callApi(payload) {
             elements.btnDownload.disabled = false;
             elements.btnRetry.disabled = false;
             
-            console.log('✅ Imagen procesada exitosamente');
+            console.log('✅ Imagen editada exitosamente');
             showError('✅ Imagen editada exitosamente con IA', 'success');
         } else {
-            const reason = analyzeApiResponse(data);
-            showError('No se pudo generar la imagen. Razón: ' + reason);
+            console.error('❌ No se pudo extraer imagen de la respuesta');
+            console.log('📋 Respuesta completa:', JSON.stringify(data, null, 2));
+            showError('La API no devolvió una imagen válida');
         }
         
     } catch (error) {
@@ -320,28 +324,54 @@ async function fetchWithBackoff(url, options, maxRetries) {
 
 function extractImageFromResponse(data) {
     try {
-        console.log('🔍 Analizando respuesta:', data);
+        console.log('🔍 Analizando respuesta de Gemini Imagen:', data);
         
         if (data.candidates && data.candidates[0] && data.candidates[0].content) {
             const parts = data.candidates[0].content.parts;
             
             if (!parts || !Array.isArray(parts)) {
-                console.log('⚠️ No hay parts válidas');
+                console.log('⚠️ No hay parts válidas en la respuesta');
+                console.log('🔍 Estructura de respuesta:', JSON.stringify(data, null, 2));
                 return null;
             }
             
+            console.log('📋 Parts encontradas:', parts.length);
+            
             for (let i = 0; i < parts.length; i++) {
                 const part = parts[i];
+                console.log(`🔍 Analizando part ${i}:`, part);
+                
+                // Buscar imagen en inline_data
                 if (part.inline_data && part.inline_data.data) {
-                    console.log('✅ Imagen encontrada');
+                    console.log('✅ Imagen encontrada en inline_data');
+                    console.log('🔍 Tipo MIME:', part.inline_data.mime_type);
+                    console.log('🔍 Tamaño de datos:', part.inline_data.data.length);
                     return part.inline_data.data;
                 }
+                
+                // Buscar imagen en texto (formato data:image)
                 if (part.text && part.text.indexOf('data:image') !== -1) {
                     const match = part.text.match(/data:image\/[a-z]+;base64,([a-zA-Z0-9+\/=]+)/);
                     if (match) {
                         console.log('✅ Imagen encontrada en texto');
                         return match[1];
                     }
+                }
+                
+                // Log para debug
+                if (part.text) {
+                    console.log(`📝 Texto en part ${i}:`, part.text.substring(0, 200));
+                }
+            }
+        }
+        
+        // Información adicional para debug
+        if (data.candidates) {
+            console.log('📋 Candidates disponibles:', data.candidates.length);
+            if (data.candidates[0]) {
+                console.log('📋 First candidate finish reason:', data.candidates[0].finishReason);
+                if (data.candidates[0].safetyRatings) {
+                    console.log('📋 Safety ratings:', data.candidates[0].safetyRatings);
                 }
             }
         }
@@ -352,29 +382,6 @@ function extractImageFromResponse(data) {
         console.error('❌ Error extrayendo imagen:', error);
         return null;
     }
-}
-
-function analyzeApiResponse(data) {
-    if (data.candidates && data.candidates[0] && data.candidates[0].finishReason) {
-        const reason = data.candidates[0].finishReason;
-        
-        switch (reason) {
-            case 'SAFETY':
-                return 'La IA bloqueó el resultado (Motivo: SAFETY)';
-            case 'RECITATION':
-                return 'Contenido bloqueado por derechos de autor';
-            case 'OTHER':
-                return 'Error desconocido en el procesamiento';
-            default:
-                return 'Error: ' + reason;
-        }
-    }
-    
-    if (data.promptFeedback && data.promptFeedback.blockReason) {
-        return 'Prompt bloqueado: ' + data.promptFeedback.blockReason;
-    }
-    
-    return 'La respuesta no contiene una imagen válida';
 }
 
 // ===========================
@@ -591,4 +598,4 @@ function fileToBase64(file) {
     });
 }
 
-console.log('🎨 Editor de Fotos E-commerce - VERSIÓN ESTABLE');
+console.log('🎨 Editor de Fotos E-commerce - MODELO DE EDICIÓN GEMINI 2.5 FLASH IMAGE');
