@@ -1,6 +1,6 @@
 // ===========================
 // E-COMMERCE PHOTO EDITOR
-// JavaScript Application Logic - VERSIÓN ESTABLE
+// JavaScript Application Logic - VERSIÓN FINAL CORREGIDA
 // ===========================
 
 // Configuration
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupEventListeners();
     showApiNotice();
-    console.log('🚀 Editor inicializado - Versión Estable');
+    console.log('🚀 Editor inicializado - Versión Final');
 });
 
 function initializeApp() {
@@ -453,15 +453,15 @@ function showError(message, type) {
     const typeConfig = {
         error: {
             background: '#DC3545',
-            icon: '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>'
+            icon: 'error'
         },
         success: {
             background: '#198754',
-            icon: '<polyline points="20,6 9,17 4,12"/>'
+            icon: 'success'
         },
         info: {
             background: '#0DCAF0',
-            icon: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'
+            icon: 'info'
         }
     };
     
@@ -470,9 +470,20 @@ function showError(message, type) {
     const notificationDiv = document.createElement('div');
     notificationDiv.className = 'notification';
     
-    const svgIcon = '
-```' + config.icon + '```
+    let svgIcon = '';
+    if (config.icon === 'error') {
+        svgIcon = '
+```<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>```
 ';
+    } else if (config.icon === 'success') {
+        svgIcon = '
+```<polyline points="20,6 9,17 4,12"/>```
+';
+    } else if (config.icon === 'info') {
+        svgIcon = '
+```<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>```
+';
+    }
     
     notificationDiv.innerHTML = svgIcon + '<span>' + message + '</span>';
     
@@ -531,4 +542,4 @@ function fileToBase64(file) {
     });
 }
 
-console.log('🎨 Editor de Fotos E-commerce - VERSIÓN ESTABLE');
+console.log('🎨 Editor de Fotos E-commerce - VERSIÓN FINAL CORREGIDA');
