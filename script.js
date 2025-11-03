@@ -1,6 +1,6 @@
 // ===========================
 // E-COMMERCE PHOTO EDITOR
-// JavaScript Application Logic - VERSIÓN FINAL CORREGIDA
+// JavaScript Application Logic - VERSIÓN ESTABLE
 // ===========================
 
 // Configuration
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupEventListeners();
     showApiNotice();
-    console.log('🚀 Editor inicializado - Versión Final');
+    console.log('🚀 Editor inicializado - Versión Estable');
 });
 
 function initializeApp() {
@@ -453,15 +453,15 @@ function showError(message, type) {
     const typeConfig = {
         error: {
             background: '#DC3545',
-            icon: 'error'
+            icon: '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>'
         },
         success: {
             background: '#198754',
-            icon: 'success'
+            icon: '<polyline points="20,6 9,17 4,12"/>'
         },
         info: {
             background: '#0DCAF0',
-            icon: 'info'
+            icon: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'
         }
     };
     
@@ -470,20 +470,7 @@ function showError(message, type) {
     const notificationDiv = document.createElement('div');
     notificationDiv.className = 'notification';
     
-    let svgIcon = '';
-    if (config.icon === 'error') {
-        svgIcon = '
-```<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>```
-';
-    } else if (config.icon === 'success') {
-        svgIcon = '
-```<polyline points="20,6 9,17 4,12"/>```
-';
-    } else if (config.icon === 'info') {
-        svgIcon = '
-```<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>```
-';
-    }
+    const svgIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width=\'2\'>' + config.icon + '</svg>';
     
     notificationDiv.innerHTML = svgIcon + '<span>' + message + '</span>';
     
@@ -542,4 +529,4 @@ function fileToBase64(file) {
     });
 }
 
-console.log('🎨 Editor de Fotos E-commerce - VERSIÓN FINAL CORREGIDA');
+console.log('🎨 Editor de Fotos E-commerce - VERSIÓN ESTABLE');
